@@ -1,0 +1,3965 @@
+﻿using Peak.Common.Attributes;
+using Peak.Common.Enums;
+using Peak.Common.Krediler.Enums;
+//using Peak.Common.Krediler.IhracatTaahhutleri.DataTransferObjects;
+using Peak.Common.Krediler.Itfa.DataTransferObjects;
+using Peak.Common.Krediler.TaksitliTicari.DataTransferObjects;
+using Peak.Common.Krediler.TaksitliTicari.Interfaces;
+using Peak.Common.Krediler.TicariKrediFiyatlama.DataTransferObjects;
+using Peak.Common.Krediler.TicariKrediFiyatlama.Enums;
+using Peak.Common.Krediler.Yetki.Enums;
+using Peak.Common.Messaging;
+using Peak.Common.Parameter.DataTransferObjects;
+using Peak.UI.Communication;
+using Peak.UI.Windows.Commands;
+using Peak.UI.Windows.Enums;
+using Peak.UI.Windows.Library.Utility;
+using Peak.UI.Windows.Screens;
+using Peak.UI.Windows.ViewModels;
+using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Linq;
+using Peak.UI.Windows.Library.Utility;
+using Peak.UI.Windows.Screens;
+using Peak.Common.Musteri.DataTransferObjects;
+using Peak.Common.Musteri.Enums;
+using Peak.UI.Windows.Screen.Utility.Sinif;
+using Peak.Common.Krediler.DataTransferObjects;
+using Peak.UI.Windows.Library.Utility.Sinif;
+using Peak.Common.Krediler.Yetki.DataTransferObjects;
+using Peak.Common.Krediler.TaksitliTicari.Enums;
+using Peak.Common;
+using Peak.Common.Krediler.Itfa.Enums;
+using Peak.Common.CRM.DataTransferObjects;
+using Peak.Common.CRM.Interfaces;
+using Peak.Common.Krediler.Yetki.DataTransferObjects;
+using Peak.Common.Krediler.Yetki.Enums;
+using Peak.Common.Krediler.Yetki.Interfaces;
+using Peak.Common.Krediler.TaksitliTicari.Constants;
+using Peak.Common.Security.DataTransferObjects;
+using Peak.Common.Security.Interfaces;
+using Peak.Common.Security.Enums;
+using Peak.Common.KrediIzleme;
+using Peak.Common.KrediIzleme.DataTransferObjects;
+using Peak.Common.KrediIzleme.Interfaces;
+using System.Collections;
+using Peak.UI.Windows.UserControls;
+using Peak.Common.Messaging.Enums;
+using Peak.Common.Fiyatlama.DataTransferObjects;
+using Peak.Common.Fiyatlama.Interfaces;
+using System.Windows;
+using Peak.Common.Musteri.Interfaces;
+
+namespace Peak.UI.Windows.Screen
+{
+    /// <summary>
+    /// ViewModel of TKRTEXMGUN.xaml
+    /// </summary>
+    [Serializable]
+    public class TKRTEXMGUNVM : BaseItemEditViewModel
+    {
+        #region Private Members
+
+        private enum _enumTabItems
+        {
+            TabItemYeniItfa = 0,
+            TabItemMevcutItfa = 1
+        }
+
+        private LDTOKrediHesap _selectedDtoKrediHesap = new LDTOKrediHesap();
+        private KrediHesapBileseniAramaTurleri _krediHesapAramaTurleri = KrediHesapBileseniAramaTurleri.MusteriIleArama;
+        private Visibility _krediHesapVisible = Visibility.Visible;
+        private Visibility _yetkiBilgileriPanelVisible = Visibility.Collapsed;
+        private Visibility _oranYetkiGridVisible = Visibility.Collapsed;
+        private bool _mevcutKomisyonOraniDegisecek = false;
+        private bool _referansKoduEditable = true;
+        private EditModes _subeBirimItfaEditMode = EditModes.UpdateOnly;
+        private Visibility _yeniKayitEkleyebilirMi = Visibility.Collapsed;
+        private bool _komisyonOraniDegistirebilirMi = true;
+        private bool _geriOdemeYapildiMi = true;
+        private bool _komisyonOraniDegistir = false;
+        private bool _valueControl = true;
+        private DTOEximBankKredi _ekranKapanisKontrol;
+        private long _krediHesapNo;
+
+        private string _musteriAdi;
+        private string _musteriNo;
+
+        private DTOTicariTaksitliHesap _ticariTaksitliHesap = new DTOTicariTaksitliHesap();
+
+        private bool _tahsilatEkranindanMi;
+        private bool _mevcutItfaDegisecek = false;
+        private string _subeMiBirimMi;
+        private bool _subeBirimAktifMi;
+        private bool _eklenenItfaAktifMi;
+        private DelegateCommand _rowDeleted;
+
+        private DTOEximBankKredi _islemYapilanEximRef;
+
+        private bool _hesaplaButonunaBasildi = false;
+
+        private DTOYenidenYapilandir _yenidenYapilandir;
+        private List<DTOAksamaDetay> _lstAksamaDetay;
+        DTOIsAkisiBilgi _isAkisiBilgi = new DTOIsAkisiBilgi();
+
+        private List<DTOParameter> _lstParametreKrediIndirimArtirimKriteri;
+        private DTOMusteri _musteri;
+        private DTOMusteriGercek _musteriGercek;
+        private DTOMusteriTuzel _musteriTuzel;
+
+        private FiyatlamaYonetimi _fiyatlamaYonetimi = new FiyatlamaYonetimi();
+        private EnableParametre _ekranEnable = new EnableParametre();
+        private LDTOKrediReferansBilgi _musteriBilgisi = new LDTOKrediReferansBilgi();
+        private FiyatlamaSorgu _fiyatlamaSorgu = new FiyatlamaSorgu();
+
+        private HataYonetimi _hataYonetimi = new HataYonetimi();
+
+
+        private LDTOKullandirimIsVisibleParametre _ekranIsVisible = new LDTOKullandirimIsVisibleParametre();
+        private LDTOItfaEnableParametre _itfaEnableParametre = new LDTOItfaEnableParametre();
+        private bool _propertyAktif;
+        private TaksitliKrediTurleri _taksitliKrediTuru;
+
+        private DTOTaksitliKullandirim _taksitliKullandirimDegisimOncesi;
+
+        private DTOKrediIsAkisi _krediIsAkisi = new DTOKrediIsAkisi();
+        private DTOFisEkBilgi _fisEkBilgi = new DTOFisEkBilgi();
+        private LDTOFisBilgi _fisBilgi = new LDTOFisBilgi();
+
+        #region VIEW Model
+
+        private decimal anaparaFarki;
+        private int _odenecekTaksitNo;
+        private bool _krediHesapTetikle;
+        private bool _krediHesapTemizle;
+        private long _eximFirmaKodu;
+        private List<DTOEximBankKredi> _dtoEximBankReferanslari = new List<DTOEximBankKredi>();
+        private DTOEximBankKredi _selectedEximBankReferansi = new DTOEximBankKredi();
+
+        private ObservableCollection<LDTOTicariTaksitliKrediBilgiIfa> _dtoYeniItfa = new ObservableCollection<LDTOTicariTaksitliKrediBilgiIfa>();
+
+        private ObservableCollection<LDTOTicariTaksitliKrediBilgiIfa> _dtoMevcutItfa = new ObservableCollection<LDTOTicariTaksitliKrediBilgiIfa>();
+
+        private LDTOTicariTaksitliKrediBilgiIfa _dtoEklenenItfa = new LDTOTicariTaksitliKrediBilgiIfa();
+
+        private ObservableCollection<FiyatlamaYonetimi> _dtoYeniFiyatlama = new ObservableCollection<FiyatlamaYonetimi>();
+
+        private List<DTOTicariIndirimArtirim> lstIndirimArtirimKriter = new List<DTOTicariIndirimArtirim>();
+
+        private LDTOTicariTaksitliKrediBilgiIfa _secilenItfa = new LDTOTicariTaksitliKrediBilgiIfa();
+        private LDTOTicariTaksitliKrediBilgiIfa _silinenItfa = new LDTOTicariTaksitliKrediBilgiIfa();
+        private LDTOTicariTaksitliKrediBilgiIfa _secilenItfaDegismedenOnce = new LDTOTicariTaksitliKrediBilgiIfa();
+        private DTOTicariTaksitliItfaPlan _ticariTaksitliItfaPlan = new DTOTicariTaksitliItfaPlan();
+        private LDTOItfaParametre _itfaParametre = new LDTOItfaParametre();
+        private DTOTicariTaksitliHesap _taksitliHesap = new DTOTicariTaksitliHesap();
+
+        private List<LDTOTicariTaksitliKrediBilgiIfa> lstDegisenItfa = new List<LDTOTicariTaksitliKrediBilgiIfa>();
+
+        private DelegateCommand _fiyatGetirCommand;
+        private DelegateCommand _hesaplaCommand;
+        private DelegateCommand _ekleItfaCommand;
+        private DelegateCommand _acGeriOdemeEkraniCommand;
+        private List<LDTOTicariTaksitliKrediBilgiIfa> lstTicariTaksitliKrediBilgiIfa;
+        private List<LDTOTicariTaksitliKrediBilgiIfa> lstGuncellenecekTicariTaksitliKrediBilgiIfa;
+        private List<LDTOItfaOran> LstItfaOran;
+
+        private decimal _mevcutKomisyonOrani;
+        private decimal _yeniKomisyonOrani;
+        private decimal _faizOrani;
+        private List<LDTOTaksitliOran> _lstTaksitliOran;
+
+        private Peak.UI.Windows.Library.OrtakFonksiyonlar _ortakFonksiyonlar = new Peak.UI.Windows.Library.OrtakFonksiyonlar();
+
+        private List<LDTOItfaHesaplamaSablonu> _lstRevizyonHesaplamaSablonu;
+
+        private DTOEximBankKredi dtoExim;
+
+        private LDTOTicariTaksitliKrediBilgiIfa _secilenItfaClone = new LDTOTicariTaksitliKrediBilgiIfa();
+
+        #endregion
+
+        #region Yetki
+
+        private List<DTOParameter> _lstParametreYetkiNedenKodu;
+        private List<LDTOItfaYetkiParametre> _lstItfaYetkiParametre = new List<LDTOItfaYetkiParametre>();
+        private LDTOUrunYetki _urunYetki = new LDTOUrunYetki();
+
+        private DTOOranYetki _secilenOranYetki;
+        private ObservableCollection<DTOOranYetki> _lstOranYetki = new ObservableCollection<DTOOranYetki>();
+        private List<DTOOranYetki> _lstIsAkisiOranYetki;
+        private List<DTOOranYetki> _lstOranYetkiSube = new List<DTOOranYetki>();
+        private List<DTOOranYetki> _lstOranYetkiDegisimOncesi = new List<DTOOranYetki>();
+
+        private ObservableCollection<DTOYetkiNedenKontrol> _lstYetkiNedenKontrol = new ObservableCollection<DTOYetkiNedenKontrol>();
+        private List<DTOYetkiNedenKontrol> _lstIsAkisiYetkiNedenKontrol;
+        private YetkiYonetimiUI _yetkiYonetimi = new YetkiYonetimiUI();
+
+        private List<KrediYetkiNedenKodlari> _lstDurumuOnaylanmamisYetki;
+        private List<LDTOOnaylananYetki> _lstOnaylananYetki;
+
+        private List<LDTOItfaHesaplamaSablonu> _lstItfaHesaplamaSablonu;
+
+        private DTOTaksitliKullandirim _taksitliKullandirim = new DTOTaksitliKullandirim();
+
+        private LDTOItfaTetikle _itfaTetikle = new LDTOItfaTetikle();
+
+        #endregion
+
+
+
+        #region LOCAL
+
+        int _selectedTabIndex = 0;
+        bool _enableExpanderKayit = false;
+
+        OperationResult _operation = new OperationResult();
+        Dictionary<string, List<DTOTicariTaksitliHesap>> _dicTicariHesaplar = new Dictionary<string, List<DTOTicariTaksitliHesap>>();
+        Dictionary<string, List<LDTOTicariTaksitliKrediBilgiIfa>> _dicItfaHesaplar = new Dictionary<string, List<LDTOTicariTaksitliKrediBilgiIfa>>();
+
+        #endregion
+
+        AccessModes _eximReferansKoduEnabled = AccessModes.NonEditable;
+
+
+        #endregion Private Members
+
+        #region Private Methods
+
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="pcea"></param>
+        private void itfaParametre_PropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs pcea)
+        {
+            if (ScreenMode != ScreenModes.Workflow)
+            {
+                LDTOItfaParametre itfaParametre = sender as LDTOItfaParametre;
+
+                if (itfaParametre != null)
+                {
+                    itfaParametre.PropertyChanged -= itfaParametre_PropertyChanged;
+                    YetkiYonetimi.ItfaParametre = ObjectCloner.Clone<LDTOItfaParametre>(itfaParametre);
+
+                    try
+                    {
+                        switch (pcea.PropertyName)
+                        {
+                            case "Valorsuzluk":
+
+                                YetkiYonetimi.LstYetkiNeden = new List<LDTOYetkiNeden>() { 
+                                    new LDTOYetkiNeden(){YetkiNedenKodu = KrediYetkiNedenKodlari.ValorYetkisi}
+                                };
+                                YetkiYonetimi.Olustur();
+
+                                break;
+                        }
+                    }
+                    catch (BaseException be)
+                    {
+                        Messages.ShowWarningMessage(Peak.Common.Krediler.TaksitliTicari.Constants.Mesaj.HATA, be.ToString());
+                        _hataYonetimi.EkleHata(new Hata() { HataTipi = Utility.Enums.HataTipleri.ItfaParametrePropertyDegisiklikHatasi, HataAciklamasi = be.ToString() });
+                    }
+                    catch (Exception ex)
+                    {
+                        Messages.ShowWarningMessage(Peak.Common.Krediler.TaksitliTicari.Constants.Mesaj.HATA, ex.ToString());
+                        _hataYonetimi.EkleHata(new Hata() { HataTipi = Utility.Enums.HataTipleri.ItfaParametrePropertyDegisiklikHatasi, HataAciklamasi = ex.ToString() });
+                    }
+                    itfaParametre.PropertyChanged += itfaParametre_PropertyChanged;
+                }
+            }
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        private void yetkiIlgiliBirimDoldur()
+        {
+            RequestMessage request = new RequestMessage();
+
+            LstYetkiNedenKontrol = LstYetkiNedenKontrol ?? new ObservableCollection<DTOYetkiNedenKontrol>();
+
+            LDTOUrunYetki urunYetki = new LDTOUrunYetki();
+            if (UrunYetki != null)
+                urunYetki = UrunYetki;
+
+            LDTOKrediReferansBilgi musteriBilgisi = new LDTOKrediReferansBilgi() { Rumuz = "TaksitliKullandirim" };
+
+            if (MusteriBilgisi != null)
+            {
+                musteriBilgisi = MusteriBilgisi;
+                musteriBilgisi.Rumuz = "TaksitliKullandirim";
+            }
+
+            List<DTOYetkiNedenKontrol> lstYetkiNedenKontrol = new List<DTOYetkiNedenKontrol>();
+            if (YetkiYonetimi.LstYetkiNedenKontrol != null && YetkiYonetimi.LstYetkiNedenKontrol.Count > 0)
+                lstYetkiNedenKontrol = YetkiYonetimi.LstYetkiNedenKontrol;
+
+            request.Add(urunYetki);
+            request.Add(musteriBilgisi);
+            request.Add(lstYetkiNedenKontrol);
+            request.Add(new DTOYetkiNedenKontrol() { Rumuz = "TaksitliKullandirim" });
+
+            using (ISKredilerYetki proxy = Service.CreateProxy<ISKredilerYetki>(this))
+            {
+                ResponseMessage response = proxy.GetirYetkiNedenBilgiIle(request);
+
+                if (response.Get<List<DTOYetkiNedenKontrol>>() != null)
+                    YetkiYonetimi.LstYetkiNedenKontrol = new List<DTOYetkiNedenKontrol>(response.Get<List<DTOYetkiNedenKontrol>>());
+            }
+        }
+
+        /// <summary>
+        /// Gün sayısından fazla Aksama kaydı var mı
+        /// </summary>
+        /// <param name="musteriNo"></param>
+        /// <param name="gunSayisi"></param>
+        /// <returns></returns>
+        private bool aksamaKaydiVarMi(string musteriNo, int gunSayisi)
+        {
+            RequestMessage request = new RequestMessage();
+            request.Add(new DTOAksama() { VbMusteriNo = musteriNo });
+            using (ISAksama proxy = Service.CreateProxy<ISAksama>(this))
+            {
+                ResponseMessage response = proxy.GetirAksamaIle(request);
+
+                DTOAksama aksama = response.Get<DTOAksama>();
+                if (aksama != null && aksama.Flag == true)
+                {
+                    List<DTOAksamaDetay> lstAksamaDetay = response.Get<List<DTOAksamaDetay>>();
+                    if (lstAksamaDetay != null && lstAksamaDetay.Count > 0)
+                    {
+                        foreach (DTOAksamaDetay aksamaDetay in lstAksamaDetay)
+                        {
+                            if (aksamaDetay.AksayanGun >= gunSayisi)
+                                return true;
+                        }
+                    }
+                }
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// GetirYenidenYapilandirma operasyonunu kullanarak MüsteriNo ile kayıt çeken fonksiyon.
+        /// </summary>
+        /// <param name="musteriNo"></param>
+        /// <param name="lstAksamaDetay"></param>
+        /// <returns></returns>
+        private DTOYenidenYapilandir getirYenidenYapilandirmaIle(string musteriNo, out List<DTOAksamaDetay> lstAksamaDetay)
+        {
+            RequestMessage request = new RequestMessage();
+            request.Add(new DTOYenidenYapilandir { VbMusteriNo = musteriNo, KrediDurumu = "Acik" });
+
+            using (ISAksama proxy = Service.CreateProxy<ISAksama>(this))
+            {
+                ResponseMessage response = proxy.GetirYenidenYapilandirmaIle(request);
+
+                DTOYenidenYapilandir yenidenYapilandir = response.Get<DTOYenidenYapilandir>();
+
+                lstAksamaDetay = null;
+                if (yenidenYapilandir.HataKodu != "01")
+                    //Servisten dönen response içinde DtoAksama türündeki değerlerimiz içinde yer alan Listemizi okuyoruz.
+                    lstAksamaDetay = response.Get<List<DTOAksamaDetay>>();
+
+                return yenidenYapilandir;
+            }
+        }
+
+        //Getir Fiyat
+        public DelegateCommand FiyatGetirCommand
+        {
+            get
+            {
+                return _fiyatGetirCommand;
+            }
+            set
+            {
+                _fiyatGetirCommand = value;
+            }
+        }
+
+        //Hesapla
+        public DelegateCommand HesaplaCommand
+        {
+            get
+            {
+                return _hesaplaCommand;
+            }
+            set
+            {
+                _hesaplaCommand = value;
+            }
+        }
+
+        /// <summary>
+        /// Birimin 1.Sicil mi 2.Sicil mi olduğunu döner
+        /// </summary>
+        /// <param name="tag"></param>
+        private KrediSicilSeviyeleri birimBirinciSicilMiIkinciSicilMi(string tag)
+        {
+            KrediSicilSeviyeleri sicilSeviye = KrediSicilSeviyeleri.None;
+            /*
+            if (string.IsNullOrEmpty(tag) != true)
+            {
+                string besinciKarakter = tag.Substring(5, 1);//tagBP1 dan 1 ye ulaşmak. 5. karaktere konumlan. Bir karakter oku
+                switch (besinciKarakter)
+                {
+                    case "1":
+                        sicilSeviye = KrediSicilSeviyeleri.BirinciSicil;
+                        break;
+                    case "2":
+                        sicilSeviye = KrediSicilSeviyeleri.IkinciSicil;
+                        break;
+                }
+            }
+              */
+            return sicilSeviye;
+        }
+
+        /// <summary>
+        /// Sube Bölge GenelMüdürlük
+        /// </summary>
+        /// <param name="tag"></param>
+        private KrediSicilYetkileri getirYetkiSeviyesiTagIle(string tag)
+        {
+            if (string.IsNullOrEmpty(tag))
+                return KrediSicilYetkileri.None;
+            if (tag.Length < 6)
+                return KrediSicilYetkileri.None;
+            KrediSicilYetkileri yetkiSeviyesi = KrediSicilYetkileri.Sube;
+            if (string.IsNullOrEmpty(tag) != true)
+            {
+                string dorduncuKarakter = tag.Substring(3, 1);//tagB dan B ye ulaşmak. 3. karaktere konumlan. Bir karakter oku
+                switch (dorduncuKarakter)
+                {
+                    case "S":
+                        yetkiSeviyesi = KrediSicilYetkileri.Sube;
+                        break;
+                    case "B":
+                        yetkiSeviyesi = KrediSicilYetkileri.Bolge;
+                        break;
+                    case "G":
+                        yetkiSeviyesi = KrediSicilYetkileri.GenelMudurluk;
+                        break;
+                }
+            }
+
+            return yetkiSeviyesi;
+        }
+
+        private void YeniItfa_CollectionChanged(object sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
+        {
+            System.Diagnostics.Debug.WriteLine("YeniItfa_CollectionChanged OK");
+
+            for (int i = 0; i < YeniItfa.Count; i++)
+            {
+                YeniItfa[i].TaksitNo = i;
+            }
+
+            if (e != null && e.OldItems != null)
+            {
+                foreach (LDTOTicariTaksitliKrediBilgiIfa itfa in e.OldItems)
+                {
+                    itfa.DurumKodu = 2;
+                }
+            }
+        }
+
+
+
+        private void secilenItfa_PropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs pcea)
+        {
+            System.Diagnostics.Debug.WriteLine("secilenItfa_PropertyChanged OK");
+
+            if (pcea.PropertyName == "TaksitTarihi")
+            {
+                if (SecilenItfa.TaksitTarihi >= Calendar.Calendar.GetToday())
+                {
+                    //Sort
+                    List<LDTOTicariTaksitliKrediBilgiIfa> YeniItfa2 = YeniItfa.ToList();
+                    YeniItfa2.Sort((itfa1, itfa2) => itfa1.TaksitTarihi.ToString("yyyyMMdd").CompareTo(itfa2.TaksitTarihi.ToString("yyyyMMdd")));
+
+                    YeniItfa = new ObservableCollection<LDTOTicariTaksitliKrediBilgiIfa>(YeniItfa2);
+
+                    for (int i = 0; i < YeniItfa.Count; i++)
+                    {
+                        YeniItfa[i].TaksitNo = i;
+                    }
+                }
+                else
+                {
+                    SecilenItfa.TaksitTarihi = _secilenItfaClone.TaksitTarihi;
+                }
+            }
+
+            else if (pcea.PropertyName != "TaksitFaizTutari")
+            {
+                HesaplaButonunaBasildi = false;
+
+                LDTOTicariTaksitliKrediBilgiIfa degisenKrediBilgiItfa = sender as LDTOTicariTaksitliKrediBilgiIfa;//değişen
+
+
+                for (int i = 0; i < YeniItfa.Count; i++)
+                {
+                    if (i > 0)
+                    {
+                        YeniItfa[i].OncekiTaksitTarihi = YeniItfa[i - 1].TaksitTarihi;
+
+                        YeniItfa[i].KalanAnapara = YeniItfa[i - 1].KalanAnapara - YeniItfa[i].TaksitAnaparaTutari;
+                        //System.Diagnostics.Debug.WriteLine("(I-1)KALAN ANAPARA= " + YeniItfa[i - 1].KalanAnapara + " (I-1)TAKSIT ANAPARA=" + YeniItfa[i - 1].TaksitAnaparaTutari + " KALANANAPARA=" + YeniItfa[i].KalanAnapara + " TAKSITANAPARA=" + YeniItfa[i].TaksitAnaparaTutari);
+                    }
+                    if (i < YeniItfa.Count - 1)
+                    {
+                        YeniItfa[i].SonrakiTaksitTarihi = YeniItfa[i + 1].TaksitTarihi;
+                    }
+                }
+            }
+
+
+        }
+
+        private void fiyatlamaSorgu_PropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs pcea)
+        {
+            FiyatlamaSorgu fiyatlamaSorgu = sender as FiyatlamaSorgu;
+            if (fiyatlamaSorgu != null)
+            {
+                fiyatlamaSorgu.PropertyChanged -= fiyatlamaSorgu_PropertyChanged;
+
+                ItfaParametre.TaksitOdemeGunu = null;
+
+                FiyatlamaYonetimi.FiyatlamaSorgusuYapildiMi = false;
+
+
+                TaksitliHesap.MasrafTahsilatDovizCinsi = string.Empty;
+                TaksitliHesap.FaizTipi = KrediFaizTipleri.None;
+                TaksitliHesap.DegiskenFaizTipi = KrediDegiskenFaizTipleri.None;
+
+                fiyatlamaSorgu.PropertyChanged += fiyatlamaSorgu_PropertyChanged;
+            }
+        }
+
+        private void degistirIsVisibleFiyatlama(KrediSicilYetkileri sicilYetkiSeviyesi)
+        {
+            bool isVisibleSubeAltOrani = false;
+            bool isVisibleBolgeOrani = false;
+            bool isVisibleGenelMudurlukOrani = false;
+
+            switch (sicilYetkiSeviyesi)
+            {
+                case KrediSicilYetkileri.Bolge:
+                    isVisibleBolgeOrani = true;
+                    isVisibleSubeAltOrani = true;
+                    break;
+                case KrediSicilYetkileri.GenelMudurluk:
+                    isVisibleSubeAltOrani = true;
+                    isVisibleBolgeOrani = true;
+                    isVisibleGenelMudurlukOrani = true;
+                    break;
+            }
+
+            EkranIsVisible.SubeAltOrani = isVisibleSubeAltOrani;
+            EkranIsVisible.BolgeOrani = isVisibleBolgeOrani;
+            EkranIsVisible.GenelMudurlukOrani = isVisibleGenelMudurlukOrani;
+        }
+
+        /// <summary>
+        ///Bağlı olduğu bölgeyi bulan fonksiyon
+        /// </summary>
+        /// <param name="subeKodu"></param>
+        /// <returns></returns>
+        private DTOBranch bulBagliOlduguBolge(string subeKodu)
+        {
+            RequestMessage request = new RequestMessage();
+            ResponseMessage response = new ResponseMessage();
+            request.Add(new DTOBranchRelation()
+            {
+                BranchCode = subeKodu,
+                RelationTypeId = RelationTypes.BankRegion,
+                Status = States.Active
+            });
+
+            using (ISSecurity proxy = Service.CreateProxy<ISSecurity>(this))
+            {
+                response = proxy.ReadBranchParentByRelationTypeAndStatus(request);
+            }
+
+            return response.Get<DTOBranch>();
+        }
+
+        #region Screen Control
+
+        private bool tabItemKontrol(int mevcutIndex, int secilenIndex)
+        {
+            return true;
+        }
+        private void initializeScreen()
+        {
+            KrediHesapTemizle = true;
+            //KrediHesapTetikle = false;
+            //KrediHesapTetikle = true;
+
+            EximBankReferanslari = new List<DTOEximBankKredi>();
+
+
+            TaksitliHesap = new DTOTicariTaksitliHesap();
+            EnableExpanderKayit = false;
+
+            TABIndex = (byte)_enumTabItems.TabItemYeniItfa;
+            _dicTicariHesaplar = new Dictionary<string, List<DTOTicariTaksitliHesap>>();
+            _dicItfaHesaplar = new Dictionary<string, List<LDTOTicariTaksitliKrediBilgiIfa>>();
+
+            YeniItfa = new ObservableCollection<LDTOTicariTaksitliKrediBilgiIfa>();
+            MevcutItfa = new ObservableCollection<LDTOTicariTaksitliKrediBilgiIfa>();
+            OdenecekTaksitNo = 0;
+        }
+        private void taksitliKullandirim_PropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs pcea)
+        {
+            DTOTaksitliKullandirim taksitliKullandirim = sender as DTOTaksitliKullandirim;
+
+        }
+
+        #endregion
+
+        #region Transaction Related
+
+        private void hesabiOku(long eximReferansKodu, string dovizCinsi, string musteriNo, DTOEximBankKredi SelectedEximBankReferansi)
+        {
+            try
+            {
+                List<DTOTicariTaksitliHesap> ticariKrediHesaplar;
+                _dicTicariHesaplar.TryGetValue(string.Format("{0}{1}{2}", eximReferansKodu, dovizCinsi, musteriNo), out ticariKrediHesaplar);
+
+                ticariKrediHesaplar = ticariKrediHesaplar.Where(a => a.DovizCinsi == dovizCinsi && a.DisDestekBasvuruNo == eximReferansKodu && a.MusteriNo == musteriNo).ToList();
+
+                if (ticariKrediHesaplar.Count == 0)
+                {
+                    Messages.ShowInformationMessage("KTHKLUC050", new string[1] { " Bu Referans Numarasına Ait Hesap Bulunamamıştır." });
+                    setOperationFault("KTHKLUC050", new string[1] { eximReferansKodu.ToString() + " Referans Numarasına Ait Hesap Bulunamamıştır." });
+                }
+                /*
+            else if (ticariKrediHesaplar.Count > 1)
+            {
+                if (ticariKrediHesaplar.Select(s => s.DovizCinsi).Distinct().Count() < ticariKrediHesaplar.Count)
+                {
+                    Messages.ShowInformationMessage("KTHKLUC050", new string[1] { eximReferansKodu.ToString() + " Referans Numarasına Ait Birden Fazla Hesap Bulunmuştur." });
+                    setOperationFault("KTHKLUC050", new string[1] { " Bu Referans Numarasına Ait Hesap Bulunamamıştır." });
+                }
+            }
+                 * */
+                else
+                {
+                    //TL,EUR seçilen  TODO
+                    TaksitliHesap = okuTaksitliHesapDisDestekReferansIle(SelectedEximBankReferansi);//XXX
+
+                    MusteriBilgisi = _ortakFonksiyonlar.musteriBilgileriniAl(TaksitliHesap.MusteriNo);
+
+                    //Sube mi Birim mi?
+
+                    string birinciKarakter = BranchInformation.Code.Substring(0, 1);
+
+                    switch (birinciKarakter)
+                    {
+                        case "S":
+                            SubeMiBirimMi = "S";
+                            break;
+                        case "B":
+                            SubeMiBirimMi = "B";
+                            break;
+                    }
+
+
+                    //TKR_ORAN tablosundan KrediHesapNo ile Oran Türü = 1,2 olanların Oranını çek (faiz,komisyon)
+                    TaksitliOran = okuTaksitliHesapKrediHesapNoIle(TaksitliHesap);
+
+                    MevcutKomisyonOrani = TaksitliOran.Find(s => s.OranTuru == 2).Oran;
+
+                    //KrediHesapTetikle = false;
+                    //KrediHesapTetikle = true;
+
+
+                }
+            }
+            catch (Exception ex)
+            {
+                Messages.ShowInformationMessage("KTHKLUC050", new string[1] { eximReferansKodu.ToString() + " " + ex.ToString() });
+                setOperationFault("KTHKLUC050", new string[1] { " " + ex.ToString() });
+            }
+        }
+
+        private void itfaYukle(long eximReferansKodu, string dovizCinsi, string musteriNo)
+        {
+            if (!checkOperation())
+                return;
+
+            try
+            {
+                List<LDTOTicariTaksitliKrediBilgiIfa> okunanItfa = new List<LDTOTicariTaksitliKrediBilgiIfa>();
+
+                _dicItfaHesaplar.TryGetValue(string.Format("{0}{1}{2}", eximReferansKodu, dovizCinsi, musteriNo), out okunanItfa);
+
+                okunanItfa = _dicItfaHesaplar[string.Format("{0}{1}{2}", eximReferansKodu, dovizCinsi, musteriNo)];
+
+                //Sort OkunanItfa
+                okunanItfa.Sort((itfa1, itfa2) => itfa1.TaksitTarihi.ToString("yyyyMMdd").CompareTo(itfa2.TaksitTarihi.ToString("yyyyMMdd")));
+
+                YeniItfa = new ObservableCollection<LDTOTicariTaksitliKrediBilgiIfa>(okunanItfa);
+                List<LDTOTicariTaksitliKrediBilgiIfa> distinctItfa = YeniItfa.GroupBy(p => p.Id).Select(g => g.First()).ToList();
+                YeniItfa = new ObservableCollection<LDTOTicariTaksitliKrediBilgiIfa>(distinctItfa);
+
+                _mevcutItfaDegisecek = true;
+
+                MevcutItfa = new ObservableCollection<LDTOTicariTaksitliKrediBilgiIfa>(ObjectCloner.ListClone<LDTOTicariTaksitliKrediBilgiIfa>(distinctItfa));
+
+                _mevcutItfaDegisecek = false;
+
+                foreach (LDTOTicariTaksitliKrediBilgiIfa itfa in YeniItfa)
+                    System.Diagnostics.Debug.WriteLine("Yeni Itfa= " + itfa.Id + "/" + itfa.DovizCinsi + "/" + itfa.DurumKodu + "/" + itfa.TaksitAnaparaTutari);
+
+                if (YeniItfa != null && YeniItfa.Count > 0)
+                {
+                    OdenecekTaksitNo = YeniItfa[0].OdenecekTaksitNo;
+                    FaizOrani = YeniItfa[YeniItfa.Count - 1].FaizOrani; //Faiz oranını al
+
+                    _mevcutKomisyonOraniDegisecek = true;
+
+                    LDTOTicariTaksitliKrediBilgiIfa yeniItfaSonKayitClone = ObjectCloner.Clone(YeniItfa[YeniItfa.Count - 1]);//mevcut kom oranı, talep edilen komisyonoranina değişmemesi için
+                    MevcutKomisyonOrani = yeniItfaSonKayitClone.KomisyonOrani;
+
+                    _mevcutKomisyonOraniDegisecek = false;
+                }
+
+                EnableExpanderKayit = true;
+
+                //Onceki ve sonraki taksit tarihlerini date component için set eder
+                for (int i = 0; i < YeniItfa.Count; i++)
+                {
+                    if (i > 0)
+                        YeniItfa[i].OncekiTaksitTarihi = YeniItfa[i - 1].TaksitTarihi;
+                    if (i < YeniItfa.Count - 1)
+                        YeniItfa[i].SonrakiTaksitTarihi = YeniItfa[i + 1].TaksitTarihi;
+                }
+
+            }
+            catch (Exception ex)
+            {
+                Messages.ShowInformationMessage("KTHKLUC050", new string[1] { eximReferansKodu.ToString() + " " + ex.ToString() });
+                setOperationFault("KTHKLUC050", new string[1] { " " + ex.ToString() });
+
+                OdenecekTaksitNo = 0;
+                EnableExpanderKayit = false;
+            }
+
+        }
+
+        private void setSession()
+        {
+            if (this.ScreenParameters.Items.Count == 0)
+            {
+                if (!checkOperation())
+                    return;
+
+                if (this.Session == null || this.Session.Customer == null || String.IsNullOrWhiteSpace(this.Session.Customer.CustomerNo))
+                    SessionController.OpenSession(new[] { Common.Enums.SessionTypes.Customer }, String.Empty, new ScreenMessage(), String.Empty, false, TaksitliHesap.MusteriNo);
+                else
+                {
+                    SessionController.CloseActiveSession();
+                    SessionController.OpenSession(new[] { Common.Enums.SessionTypes.Customer }, String.Empty, new ScreenMessage(), String.Empty, false, TaksitliHesap.MusteriNo);
+                }
+            }
+            else
+            {
+
+            }
+        }
+
+        private void krediIsAkisi_PropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs pcea)
+        {
+            DTOKrediIsAkisi krediIsAkisi = sender as DTOKrediIsAkisi;
+            if (krediIsAkisi != null)
+            {
+                //krediIsAkisi.PropertyChanged -= krediIsAkisi_PropertyChanged;
+                switch (pcea.PropertyName)
+                {
+                    case "SicilYetkisi":
+                        degistirIsVisibleFiyatlama(krediIsAkisi.SicilYetkisi);
+
+                        break;
+                }
+
+                //krediIsAkisi.PropertyChanged += krediIsAkisi_PropertyChanged;
+            }
+        }
+
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="musteriNo"></param>
+        /// <param name="portfoyKodu"></param>
+        /// <param name="portfoyAdi"></param>
+        /// <returns></returns>
+        private DTOGenelPortfoyTakimMusteri okuMusteriPortfoy(string musteriNo, out string portfoyKodu, out string portfoyAdi)
+        {
+            portfoyAdi = string.Empty;
+            portfoyKodu = string.Empty;
+            RequestMessage request = new RequestMessage();
+
+            using (ISTakimPortfoy proxy = Service.CreateProxy<ISTakimPortfoy>(this))
+            {
+                request.Add(new DTOGenelPortfoyTakimMusteri()
+                {
+                    MusteriNo = musteriNo
+                });
+                ResponseMessage response = proxy.OkuPortfoyTakimMusteriNoIle(request);
+                DTOGenelPortfoyTakimMusteri musteriPortfoy = response.Get<DTOGenelPortfoyTakimMusteri>();
+                if (musteriPortfoy != null && !string.IsNullOrEmpty(musteriPortfoy.PortfoyAd))
+                {
+                    portfoyAdi = musteriPortfoy.PortfoyAd;
+                    portfoyKodu = musteriPortfoy.PortfoyAd.Substring(0, 3);
+                }
+                return musteriPortfoy;
+            }
+        }
+
+        private void actionFiyatGetir(Object info)
+        {
+
+            YetkiYonetimi.SilYetkiNedenKodu(new List<KrediYetkiNedenKodlari>() { 
+                                                KrediYetkiNedenKodlari.FaizOrani, 
+                                                
+            });
+
+            LstOranYetki = LstOranYetki ?? new ObservableCollection<DTOOranYetki>();
+
+            // _taksitliHesap, _itfaParametre
+
+            FiyatlamaSorgu.AnaparaOdemePeriyoduOliDonem = 1;
+            FiyatlamaSorgu.AracilikEdilen = true;
+            FiyatlamaSorgu.BankamizSigortaBilgisi = TaksitliHesap.BankamizSigortaBilgisi;
+            FiyatlamaSorgu.BSMVBaslangicTarihi = new DateTime();//?
+            FiyatlamaSorgu.CekisNo = null;
+            FiyatlamaSorgu.DovizCinsi = TaksitliHesap.DovizCinsi;
+            FiyatlamaSorgu.FaizOdemePeriyodTuru = KrediZamanOlculeri.Ay;
+            FiyatlamaSorgu.FaizOdemePeriyodu = 1;
+            FiyatlamaSorgu.FiyatAlternatifi = (TaksitliHesap.FiyatAlternatifi != null) ? TaksitliHesap.FiyatAlternatifi : 0;
+            FiyatlamaSorgu.FiyatlamaSorguTipi = KrediFiyatlamaSorguTipleri.FiyatlamaAmacli;
+            FiyatlamaSorgu.IslemTutari = TaksitliHesap.KrediTutari;
+            FiyatlamaSorgu.ItfaTipi = KrediItfaTipleri.Sabit;
+            FiyatlamaSorgu.ItfaTuru = KrediItfaTurleri.EsitTaksitli;
+            FiyatlamaSorgu.KampanyaKodu = (TaksitliHesap.KampanyaKodu != null) ? TaksitliHesap.KampanyaKodu : 0;
+            FiyatlamaSorgu.KaynakKodu = TaksitliHesap.KrediKaynagi;
+            FiyatlamaSorgu.KrediKullandirimTipi = KrediKullandirimTipleri.TP;
+            FiyatlamaSorgu.MarkaKodu = (TaksitliHesap.BayiMarkaKodu != null) ? Convert.ToInt32(TaksitliHesap.BayiMarkaKodu) : 0;
+            FiyatlamaSorgu.ModelKodu = (TaksitliHesap.BayiModelKodu != null) ? Convert.ToInt32(TaksitliHesap.BayiModelKodu) : 0;
+            FiyatlamaSorgu.MolaSayisi = 0;//?
+            FiyatlamaSorgu.MusteriNo = SelectedEximBankReferansi.MusteriNo;//Session.Customer.CustomerNo;
+            FiyatlamaSorgu.NaceSektorKodu = TaksitliHesap.NaceSektorKodu;
+            FiyatlamaSorgu.OrtalamaVade = null;
+            FiyatlamaSorgu.TaksitErtelemeSayisi = 0;//?
+            FiyatlamaSorgu.UrunKodu = 55500360;
+            FiyatlamaSorgu.Vade = TaksitliHesap.VadeSuresi;
+            FiyatlamaSorgu.VadeSuresiOsizDonem = ItfaParametre.VadeSuresiOsizDonem;
+            FiyatlamaSorgu.VadeTuru = TaksitliHesap.VadeTuru;
+
+
+            FiyatlamaSorgu.FiyatlamaSorguTipi = KrediFiyatlamaSorguTipleri.FiyatlamaAmacli;
+            FiyatlamaYonetimi = new FiyatlamaYonetimi(FiyatlamaSorgu, MusteriBilgisi, lstIndirimArtirimKriter);
+            FiyatlamaYonetimi.TaksitliKrediTuru = TaksitliKrediTurleri.TicariAracilikEdilenKrediler;
+
+            FiyatlamaYonetimi.OkuFiyat();//cagır
+            yukleOran(LstOranYetki.ToList(), 0);
+
+            _hataYonetimi.SilHata(Utility.Enums.HataTipleri.FiyatlamaHatasi);
+
+            if (FiyatlamaYonetimi.FiyatlamaSorgusuYapildiMi == true)
+            {
+                //Messages.ShowInformationMessage(Peak.Common.Krediler.TaksitliTicari.Constants.Mesaj.FIYAT_SORGULAMASI_TAMAMLANDI_FAIZ_TIPI_SECIMI_YAPABILIRSINIZ);
+
+                List<DTOOranYetki> lstOranYetki = LstOranYetki.ToList();
+
+                lstOranYetki = FiyatlamaYonetimi.GetirFiyatlamaBilgisi(); //getir
+
+                //BSMV 0 olacak şekilde değiştirildi
+                lstOranYetki.Find(p => p.OranYetkiTipi == KrediOranTurleri.BSMVOrani).UygulanacakOran = 0;
+
+                LstOranYetki = new ObservableCollection<DTOOranYetki>(lstOranYetki);
+
+            }
+            else
+            {
+                string hataAciklamasi = "Fiyatlama Sorgusu yapılamadı " + FiyatlamaYonetimi.Hata;
+                _hataYonetimi.EkleHata(new Hata() { HataTipi = Utility.Enums.HataTipleri.FiyatlamaHatasi, HataAciklamasi = hataAciklamasi });
+                Messages.ShowWarningMessage(Peak.Common.Krediler.TaksitliTicari.Constants.Mesaj.HATA, hataAciklamasi);
+            }
+
+
+
+        }
+
+        private void actionAcGeriOdemeEkrani(Object info)
+        {
+            /*
+            System.Diagnostics.Debug.WriteLine("actionAcGeriOdemeEkrani OK");
+
+            OpenScreen("TKRFEXMTAH", true, false, true);
+             */
+        }
+
+        private void actionRowDeleted(Object info)
+        {
+            System.Diagnostics.Debug.WriteLine("actionRowDeleted OK");
+
+
+        }
+
+        private void actionEkleItfa(Object info)
+        {
+            System.Diagnostics.Debug.WriteLine("actionEkleItfa OK");
+
+            bool eklenebilir = true;
+
+            foreach (LDTOTicariTaksitliKrediBilgiIfa itfa in YeniItfa)
+            {
+
+                if (EklenenItfa.TaksitTarihi == itfa.TaksitTarihi || EklenenItfa.TaksitTarihi < Calendar.Calendar.GetToday().AddDays(-1))
+                {
+                    eklenebilir = false;
+                }
+            }
+
+            if (eklenebilir == true)
+            {
+                LDTOTicariTaksitliKrediBilgiIfa eklenenItfaClone = ObjectCloner.Clone(EklenenItfa);
+
+                YeniItfa.Add(eklenenItfaClone);
+
+                //Sort
+                List<LDTOTicariTaksitliKrediBilgiIfa> YeniItfa2 = YeniItfa.ToList();
+                YeniItfa2.Sort((itfa1, itfa2) => itfa1.TaksitTarihi.ToString("yyyyMMdd").CompareTo(itfa2.TaksitTarihi.ToString("yyyyMMdd")));
+
+                YeniItfa = new ObservableCollection<LDTOTicariTaksitliKrediBilgiIfa>(YeniItfa2);
+
+                for (int i = 0; i < YeniItfa.Count; i++)
+                {
+                    YeniItfa[i].TaksitNo = i;
+                }
+
+            }
+            else
+            {
+                Messages.ShowInformationMessage(Peak.Common.Krediler.TaksitliTicari.Constants.Mesaj.KALAN_ANAPARA_FARKI_BILGISI_X, new string[] { "Eklemek istediğiniz kayıt ile mevcut kayıtların taksit tarihi aynı olamaz. Ve eklemek istediğiniz kaydın taksit tarihi bugünden büyük olmalıdır." });
+            }
+        }
+
+        private void actionHesapla(Object info)
+        {
+            System.Diagnostics.Debug.WriteLine("actionHesapla OK");
+
+            //Eklenen & Silinen Itfa
+            LDTOItfaParametre itfaParametre = ObjectCloner.Clone(ItfaParametre);
+
+            List<DTOEximBankOdemePlani> lstEximBankOdemePlani = new List<DTOEximBankOdemePlani>();
+
+            foreach (LDTOTicariTaksitliKrediBilgiIfa ticariTaksitliKrediBilgiIfa in YeniItfa)
+            {
+                if (ticariTaksitliKrediBilgiIfa.TaksitTarihi >= Calendar.Calendar.GetToday())
+                {
+                    DTOEximBankOdemePlani eximBankOdemePlani = new DTOEximBankOdemePlani();
+                    eximBankOdemePlani.TaksitNo = ticariTaksitliKrediBilgiIfa.TaksitNo;
+                    eximBankOdemePlani.TaksitTarihi = ticariTaksitliKrediBilgiIfa.TaksitTarihi;
+                    eximBankOdemePlani.AnaparaTutari = ticariTaksitliKrediBilgiIfa.KalanAnapara;
+
+                    lstEximBankOdemePlani.Add(eximBankOdemePlani);
+                }
+            }
+
+            List<LDTOKrediOdemePlani> lstKrediOdemePlani = null;
+
+            if (lstEximBankOdemePlani != null && lstEximBankOdemePlani.Count > 0)
+            {
+                List<LDTOItfaHesaplamaSablonu> lstRevizyonHesaplamaSablonu = new List<LDTOItfaHesaplamaSablonu>();
+                foreach (DTOEximBankOdemePlani eximBankOdemePlani in lstEximBankOdemePlani)
+                {
+                    lstRevizyonHesaplamaSablonu.Add(new LDTOItfaHesaplamaSablonu()
+                    {
+                        TaksitTarihi = eximBankOdemePlani.TaksitTarihi,
+                        EsnekAnaparaTutari = lstEximBankOdemePlani.Last() != eximBankOdemePlani ? (decimal?)eximBankOdemePlani.AnaparaTutari : null,
+                        TaksitKalemiMi = true,
+                        AnaparaOdemesiVarMi = true,
+                        FaizOdemesiVarMi = true
+                    });
+                }
+
+                RequestMessage request = new RequestMessage();
+
+
+                itfaParametre.ItfaTuru = KrediItfaTurleri.EsitAnaparali;
+                itfaParametre.ItfaTipi = KrediItfaTipleri.Esnek;
+                itfaParametre.EsnekItfaHesapSekli = KrediEsnekItfaHesapSekilleri.KullaniciGirisi;
+                itfaParametre.DovizCinsi = "TL";
+                itfaParametre.FaizTipi = KrediFaizTipleri.SabitFaiz;
+                itfaParametre.FaizTuruOliDonem = KrediFaizTurleri.BasitFaizliKredi;
+                itfaParametre.FaizTuruOsizDonem = KrediFaizTurleri.BasitFaizliKredi;
+                itfaParametre.TaksitOdemeGunu = 30;
+                itfaParametre.ItfaPlanTuru = KrediItfaPlanTurleri.ItfaPlaniDegisim;
+                itfaParametre.Valorsuzluk = true;//Ekrandan yönetildiği için kapatıldı - GEÇİCİ OLARAK AÇILDI
+
+
+                List<LDTOTicariTaksitliKrediBilgiIfa> lstItfa = YeniItfa.ToList();
+                lstItfa.Sort((s, y) => s.TaksitTarihi.ToString("yyyymmdd").CompareTo(y.TaksitTarihi.ToString("yyyymmdd")));
+                LDTOTicariTaksitliKrediBilgiIfa gununTarihindenOncekiSonTaksit = lstItfa.FindLast(s => s.TaksitTarihi <= Calendar.Calendar.GetToday());
+                itfaParametre.KrediTutari = gununTarihindenOncekiSonTaksit.KalanAnapara;
+                itfaParametre.KullandirimTarihi = gununTarihindenOncekiSonTaksit.TaksitTarihi;
+                itfaParametre.BaslangicTaksitNo = gununTarihindenOncekiSonTaksit.TaksitNo;
+
+                //TODO:itfaOran doldur
+                List<LDTOItfaOran> LstItfaOran = new List<LDTOItfaOran>()
+                {
+                    new LDTOItfaOran(){
+                        BaslangicTarihi = itfaParametre.KullandirimTarihi,
+                        OranTuru = KrediOranTurleri.KomisyonOrani, 
+                        OranZamanBirimi= KrediZamanOlculeri.Yil,
+                        Oran = (SecilenOranYetki!=null) ? SecilenOranYetki.UygulanacakOran : MevcutKomisyonOrani //yıllık
+                    }
+                };
+
+                request.Add(itfaParametre);
+                request.Add(LstItfaOran);
+
+                if (lstRevizyonHesaplamaSablonu != null && lstRevizyonHesaplamaSablonu.Count > 0)
+                    request.Add(lstRevizyonHesaplamaSablonu);
+
+                using (var proxy = Service.CreateProxy<Peak.Common.Krediler.Itfa.Interfaces.ISKredilerItfa>(this))
+                {
+                    ResponseMessage response = proxy.HesaplaItfav2(request);
+
+                    lstKrediOdemePlani = response.Get<List<LDTOKrediOdemePlani>>("KeyKrediOdemePlani");
+                    LDTOItfaHata itfaHata = response.Get<LDTOItfaHata>();
+                    if (itfaHata != null)
+                    {
+                        System.Diagnostics.Debug.Write(string.Format("{0}-{1}", itfaHata.HataKodu, itfaHata.Hata));
+                    }
+
+                }
+
+            }
+            lstKrediOdemePlani = lstKrediOdemePlani ?? new List<LDTOKrediOdemePlani>();
+
+            //Komisyon Tutarı, BSMV Tutarı burada hesaplanıyor
+            List<LDTOTicariTaksitliKrediBilgiIfa> lstYeniItfa = YeniItfa.ToList();
+
+            int gun = 0;
+            int ay = 0;
+            int valorGun = 0;
+            bool ilkBSMVHesaplandi = false;
+
+            for (int i = 0; i < lstYeniItfa.Count; i++)
+            {
+                LDTOTicariTaksitliKrediBilgiIfa itfa = lstYeniItfa[i];
+                if (itfa.TaksitTarihi >= Calendar.Calendar.GetToday())
+                {
+
+
+                    decimal komisyonOrani = 0;
+                    decimal faizOrani;
+
+                    if (SecilenOranYetki != null && KomisyonOraniDegistir && SecilenOranYetki.OranYetkiTipi == KrediOranTurleri.KomisyonOrani)
+                        komisyonOrani = SecilenOranYetki.UygulanacakOran;
+                    else if ((LstOranYetki != null || LstOranYetki.Count > 0) && KomisyonOraniDegistir && SecilenOranYetki.OranYetkiTipi == KrediOranTurleri.KomisyonOrani)
+                    {
+                        bool has = LstOranYetki.Any(p => p.OranYetkiTipi == KrediOranTurleri.KomisyonOrani);
+                        if (has == true)
+                        {
+                            foreach (DTOOranYetki oranYetki in LstOranYetki)
+                            {
+                                if (oranYetki.OranYetkiTipi == KrediOranTurleri.KomisyonOrani)
+                                {
+                                    komisyonOrani = oranYetki.UygulanacakOran;
+                                }
+                            }
+                        }
+                        else
+                            komisyonOrani = MevcutKomisyonOrani;
+                    }
+                    else
+                        komisyonOrani = MevcutKomisyonOrani;
+
+                    itfa.KomisyonOrani = (komisyonOrani != null) ? komisyonOrani : 0;
+
+                    if (FaizOrani != null)
+                        itfa.FaizOrani = FaizOrani;
+
+                    if (i != 0)
+                    {
+                        if (i == 1)
+                        {
+                            gun = (lstYeniItfa[i].TaksitTarihi - lstYeniItfa[i - 1].TaksitTarihi).Days + 1;
+                        }
+                        else
+                        {
+                            gun = (lstYeniItfa[i].TaksitTarihi - lstYeniItfa[i - 1].TaksitTarihi).Days;
+                        }
+
+
+                        itfa.TaksitKomisyonTutari = Peak.UI.Windows.Library.Utility.ItfaFonksiyonlar.Instance.HesaplaTutar(KrediFaizTurleri.BasitFaizliKredi, komisyonOrani, valorGun, ay, gun, lstYeniItfa[i - 1].KalanAnapara);
+                        //itfa.TaksitFaizTutari = Peak.UI.Windows.Library.Utility.ItfaFonksiyonlar.Instance.HesaplaTutar(KrediFaizTurleri.BasitFaizliKredi, FaizOrani, valorGun, ay, gun, lstYeniItfa[i - 1].KalanAnapara);
+
+                        //YP için
+                        /*
+                        if (SelectedEximBankReferansi.DovizCinsi != "TL")
+                        {
+                            List<DTOParite> lstParite;
+                            List<DTOKur> lstKur = getirFiyatlamaDovizKur(RateOfExchangeTypes.Eximbank, Calendar.Calendar.GetToday(), true, out lstParite);
+                            DTOKur kur = lstKur.Find(z => z.ParaBirimi.Equals(SelectedEximBankReferansi.DovizCinsi));
+
+                            itfa.EximKuru = kur.DovizAlisKuru;
+                            itfa.TLFaizTutari = itfa.TaksitFaizTutari * kur.DovizAlisKuru;
+                            
+                            
+                        }
+                         * */
+
+                        if ((itfa.TaksitTarihi - lstYeniItfa[0].TaksitTarihi).Days > 730 && ilkBSMVHesaplandi == false)
+                        {
+                            itfa.BsmvOrani = 0;//5 değiştirildi
+                            decimal araKomisyonTutari;
+                            araKomisyonTutari = lstYeniItfa[i - 1].KalanAnapara * komisyonOrani * ((itfa.TaksitTarihi - YeniItfa[0].TaksitTarihi).Days - 730) / 36000;
+                            itfa.TaksitKomisyonBsmvTutari = Math.Round(itfa.BsmvOrani * araKomisyonTutari / 100, 2);
+                            ilkBSMVHesaplandi = true;
+                        }
+                        else if ((itfa.TaksitTarihi - lstYeniItfa[0].TaksitTarihi).Days > 730 && ilkBSMVHesaplandi == true)
+                        {
+                            itfa.BsmvOrani = 0; //5;
+                            itfa.TaksitKomisyonBsmvTutari = Math.Round(itfa.BsmvOrani * itfa.TaksitKomisyonTutari / 100, 2);
+                        }
+                        else
+                        {
+                            itfa.TaksitKomisyonBsmvTutari = Math.Round(itfa.BsmvOrani * itfa.TaksitKomisyonTutari / 100, 2);
+                        }
+
+
+                    }
+                }
+
+                HesaplaButonunaBasildi = true;
+            }
+
+            /*
+            foreach (LDTOKrediOdemePlani krediOdemePlani in lstKrediOdemePlani)
+            {
+                LDTOTicariTaksitliKrediBilgiIfa itfa = lstYeniItfa.Find(s => s.TaksitTarihi == krediOdemePlani.TaksitTarihi);
+                if (itfa != null && itfa.TaksitTarihi > itfaParametre.KullandirimTarihi)
+                {
+                    itfa.KomisyonOrani = krediOdemePlani.KomisyonOrani;
+                    //itfa.TaksitKomisyonTutari = krediOdemePlani.Komisyon;
+                    itfa.TaksitKomisyonTutari = Peak.UI.Windows.Library.Utility.ItfaFonksiyonlar.Instance.HesaplaTutar(KrediFaizTurleri.BasitFaizliKredi, itfa.KomisyonOrani, valorGun, ay, gun, itfa.KalanAnapara);
+                    
+                    itfa.TaksitTutari = itfa.TaksitFaizTutari + Convert.ToDecimal(krediOdemePlani.Anapara) + krediOdemePlani.Komisyon + krediOdemePlani.KomisyonBSMVTutari + krediOdemePlani.KomisyonKKDFTutari;
+
+                }
+            }*/
+
+        }
+
+        private List<DTOKur> getirFiyatlamaDovizKur(RateOfExchangeTypes kurTipi, DateTime gecerlilikTarihi, bool sonKur, out List<DTOParite> lstParite)
+        {
+            //Kur Bul
+            RequestMessage request = new RequestMessage();
+            request.Add(new DTOKur
+            {
+                KurTipi = kurTipi,
+                SonKur = sonKur,
+                GecerlilikTarihi = gecerlilikTarihi
+            });
+
+            using (ISKur proxy = Service.CreateProxy<ISKur>(this))
+            {
+                ResponseMessage response = proxy.DovizKurlariGetir(request);
+                lstParite = response.Get<List<DTOParite>>();
+                return response.Get<List<DTOKur>>();
+            }
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="lstOranYetki"></param>
+        /// <param name="kullandirimPesinFaizOrani"></param>
+        private void yukleOran(List<DTOOranYetki> lstOranYetki, decimal kullandirimPesinFaizOrani)
+        {
+            decimal kkdfOrani = 0;
+            decimal bsmvOrani = 0;
+            decimal taahhutluBSMVOrani = 0;
+            decimal komisyonOrani = 0;
+
+            List<LDTOItfaOran> lstItfaOran = new List<LDTOItfaOran>();
+
+            if (lstOranYetki != null && lstOranYetki.Count > 0)
+            {
+
+                DTOOranYetki oranYetkiKomisyon = lstOranYetki.Find(s => s.OranYetkiTipi == KrediOranTurleri.KomisyonOrani);
+                if (oranYetkiKomisyon != null)
+                {
+                    komisyonOrani = oranYetkiKomisyon.UygulanacakOran;
+
+                    switch ((KrediFiyatlamaOranVadeTipleri)oranYetkiKomisyon.FiyatlamaOranVadeTipi)
+                    {
+                        case KrediFiyatlamaOranVadeTipleri.Aylik:
+                            ItfaParametre.KomisyonOranTuru = KrediZamanOlculeri.Ay;
+                            break;
+                        case KrediFiyatlamaOranVadeTipleri.Yillik:
+                            ItfaParametre.KomisyonOranTuru = KrediZamanOlculeri.Yil;
+                            break;
+                    }
+                }
+
+                DTOOranYetki oranYetkiKKDF = lstOranYetki.Find(s => s.OranYetkiTipi == KrediOranTurleri.KKDFOrani);
+                if (oranYetkiKKDF != null)
+                {
+                    kkdfOrani = oranYetkiKKDF.UygulanacakOran;
+                }
+
+                DTOOranYetki oranYetkiBSMV = lstOranYetki.Find(s => s.OranYetkiTipi == KrediOranTurleri.BSMVOrani);
+                if (oranYetkiBSMV != null)
+                {
+                    bsmvOrani = 0; // oranYetkiBSMV.UygulanacakOran;
+                }
+
+                DTOOranYetki oranYetkiTaahhutluBSMV = lstOranYetki.Find(s => s.OranYetkiTipi == KrediOranTurleri.TaahhutluBSMVOrani);
+                if (oranYetkiTaahhutluBSMV != null)
+                {
+                    taahhutluBSMVOrani = 0; // oranYetkiTaahhutluBSMV.UygulanacakOran;
+                }
+            }
+            ItfaParametre.BSMVOrani = bsmvOrani;
+            ItfaParametre.KKDFOrani = kkdfOrani;
+            ItfaParametre.KomisyonOrani = komisyonOrani;
+
+            lstItfaOran.Add(new LDTOItfaOran()
+            {
+                BaslangicTarihi = ItfaParametre.KullandirimTarihi,
+                OranTuru = KrediOranTurleri.KomisyonOrani,
+                Oran = ItfaFonksiyonlar.Instance.GetirYillikOran(Convert.ToDecimal(ItfaParametre.KomisyonOrani), ItfaParametre.KomisyonOranTuru)
+            });
+
+            lstItfaOran.Add(new LDTOItfaOran()
+            {
+                BaslangicTarihi = ItfaParametre.KullandirimTarihi,
+                OranTuru = KrediOranTurleri.KKDFOrani,
+                Oran = Convert.ToDecimal(ItfaParametre.KKDFOrani)
+            });
+
+            LstItfaOran = new List<LDTOItfaOran>(lstItfaOran);
+        }
+
+
+        private DTOTicariTaksitliHesap okuTaksitliHesapDisDestekReferansIle(DTOEximBankKredi eximBankKredi)
+        {
+            RequestMessage request = new RequestMessage();
+            request.Add(eximBankKredi);
+
+            using (ISTaksitliTicari proxy = Service.CreateProxy<ISTaksitliTicari>(this))
+            {
+                ResponseMessage response = proxy.OkuTaksitliHesapDisDestekReferansIle(request);
+
+                if (!response.OperationResult.IsSucceeded)
+                {
+                    Messages.ShowInformationMessage(response.OperationResult.Items[0].MessageCode, response.OperationResult.Items[0].MessageArgs);
+                    return null;
+                }
+                return response.Get<DTOTicariTaksitliHesap>();
+            }
+        }
+
+        private List<LDTOTaksitliOran> okuTaksitliHesapKrediHesapNoIle(DTOTicariTaksitliHesap ticariTaksitliHesap)
+        {
+            RequestMessage request = new RequestMessage();
+
+            DTOTaksitliOranSorgu taksitliOranSorgu = new DTOTaksitliOranSorgu();
+            taksitliOranSorgu.KrediHesapNo = ticariTaksitliHesap.KrediHesapNo;
+            taksitliOranSorgu.ReferansTarihi = Calendar.Calendar.GetToday();
+
+            request.Add(taksitliOranSorgu);
+
+            System.Diagnostics.Debug.WriteLine("okuTaksitliHesapKrediHesapNoIle : " + taksitliOranSorgu.KrediHesapNo + " - " + taksitliOranSorgu.ReferansTarihi);
+
+            using (ISTaksitliTicari proxy = Service.CreateProxy<ISTaksitliTicari>(this))
+            {
+                ResponseMessage response = new ResponseMessage();
+
+                response = proxy.GetirGununOraniKrediHesapNoIle(request);
+
+                return response.Get<List<LDTOTaksitliOran>>();
+            }
+        }
+
+        /// <summary>
+        /// Birimin Pazarlama mı Tahsis mi olduğunu döner
+        /// </summary>
+        /// <param name="tag"></param>
+        private KrediNedenKoduIlgiliBirimleri birimPazarlamaMiTahsisMi(string tag)
+        {
+            KrediNedenKoduIlgiliBirimleri ilgiliBirim = KrediNedenKoduIlgiliBirimleri.None;
+
+            if (string.IsNullOrEmpty(tag) != true)
+            {
+                string besinciKarakter = tag.Substring(4, 1);//tagBP dan P ye ulaşmak. 4. karaktere konumlan. Bir karakter oku
+                switch (besinciKarakter)
+                {
+                    case "P":
+                        ilgiliBirim = KrediNedenKoduIlgiliBirimleri.Pazarlama;
+                        break;
+                    case "T":
+                        ilgiliBirim = KrediNedenKoduIlgiliBirimleri.Tahsis;
+                        break;
+                }
+            }
+            return ilgiliBirim;
+        }
+
+        #endregion
+
+        #region Operation Control
+
+        private void initializeOperation()
+        {
+            _operation = new OperationResult();
+            _operation.IsSucceeded = true;
+        }
+        private void setOperationFault(string hataKodu, string[] messageArgs)
+        {
+            _operation.IsSucceeded = false;
+            _operation.AddException("KTHKLUC050", messageArgs, null, null);
+        }
+        private bool checkOperation()
+        {
+            if (_operation.IsSucceeded)
+                return true;
+            else
+                return false;
+        }
+
+        #endregion
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="pcea"></param>
+        private void oranYetki_PropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs pcea)
+        {
+            DTOOranYetki oranYetki = sender as DTOOranYetki;
+
+            if (oranYetki != null)
+            {
+                oranYetki.PropertyChanged -= oranYetki_PropertyChanged;
+                DTOOranYetki oncekiOranYetki = LstOranYetkiDegisimOncesi.Find(s => s.OranYetkiTipi == oranYetki.OranYetkiTipi);
+                oncekiOranYetki = oncekiOranYetki ?? new DTOOranYetki();
+
+                KrediYetkiNedenKodlari yetkiNedenKoduOran = KrediYetkiNedenKodlari.KomisyonOraniGuncelleme;
+
+                switch (pcea.PropertyName)
+                {
+                    case "UygulanacakOran":
+
+                        if (degisebilirMiUygulanacakOran(oranYetki) == true && _secilenOranYetki.OranYetkiTipi == KrediOranTurleri.KomisyonOrani)
+                        {
+                            DateTime ilkTaksitTarihi = DateTime.MinValue;
+
+                            List<LDTOItfaHesaplamaSablonu> lstEsnekHesaplamaSablonuTemp = null;
+
+                            if (ScreenMode == ScreenModes.Workflow)
+                            {
+                                ilkTaksitTarihi = new DateTime(ItfaParametre.IlkTaksitTarihi.Ticks);
+
+                                if (ItfaParametre.ItfaTipi == KrediItfaTipleri.Esnek)
+                                {
+                                    lstEsnekHesaplamaSablonuTemp = new List<LDTOItfaHesaplamaSablonu>(this.LstItfaHesaplamaSablonu.Where(s => s.TaksitKalemiMi == true));
+                                    lstEsnekHesaplamaSablonuTemp = ItfaFonksiyonlar.Instance.AyarlaIsAkisIcinHesaplamaSablonuv2(ItfaParametre, new List<LDTOItfaOran>(), new List<LDTOItfaAnapara>(), lstEsnekHesaplamaSablonuTemp);
+                                    if (lstEsnekHesaplamaSablonuTemp != null)
+                                        lstEsnekHesaplamaSablonuTemp = lstEsnekHesaplamaSablonuTemp.FindAll(s => s.TaksitKalemiMi == true);
+                                }
+                            }
+
+                            oranYetki.UygulanacakFaizOrani = oranYetki.UygulanacakOran;
+                            if (oranYetki.OranYetkiTipi == KrediOranTurleri.FaizOrani)
+                            {
+                                oranYetki.UygulanacakFaizOrani = oranYetki.UygulanacakOran + oranYetki.FiyatlamaEndeksOran;
+                                oranYetki.SpreadArtiEndeksOrani = (oranYetki.UygulanacakOran + oranYetki.FiyatlamaEndeksOran);
+                            }
+
+                            if (!(oranYetki.UygulanacakOran <= oranYetki.SubeUstOran && oranYetki.UygulanacakOran >= oranYetki.GenelMudurlukOrani))
+                            {
+                                Messages.ShowWarningMessage(Mesaj.UYGULANACAK_ORAN_GENELMUDURLUKORAN_SUBEUSTORAN_ARALIGINDA_OLMALIDIR, new string[] { oranYetki.GenelMudurlukOrani.ToString("N7"), oranYetki.SubeUstOran.ToString("N7") });
+
+                                if (oranYetki.UygulanacakOran > oranYetki.SubeUstOran)
+                                    oranYetki.UygulanacakOran = oranYetki.SubeUstOran;
+
+                                if (oranYetki.UygulanacakOran < oranYetki.GenelMudurlukOrani)
+                                    oranYetki.UygulanacakOran = oranYetki.GenelMudurlukOrani;
+                            }
+
+                            oranYetki.BolgeYetkisindeOranVarMi = false;
+
+                            if ((oranYetki.UygulanacakOran >= oranYetki.BolgeOrani) && (oranYetki.UygulanacakOran < oranYetki.SubeUstOran))
+                            {
+                                oranYetki.BolgeYetkisindeOranVarMi = true;
+                            }
+
+                            #region Yetki Birimi
+
+                            oranYetki.YetkiBirimi = KrediSicilYetkileri.Sube;
+
+                            if (oranYetki.UygulanacakOran < oranYetki.BolgeOrani)
+                            {
+                                oranYetki.YetkiBirimi = KrediSicilYetkileri.GenelMudurluk;
+                            }
+                            else if (oranYetki.UygulanacakOran < oranYetki.SubeAltOran)
+                            {
+                                oranYetki.YetkiBirimi = KrediSicilYetkileri.Bolge;
+                            }
+
+                            if (ScreenMode == ScreenModes.Workflow)
+                            {
+                                oranYetki.YetkiBirimi = KrediSicilYetkileri.GenelMudurluk;
+
+                                if (KrediIsAkisi.SicilYetkisi == KrediSicilYetkileri.Bolge)
+                                {
+                                    oranYetki.YetkiBirimi = KrediSicilYetkileri.Bolge;
+
+                                    if (oranYetki.UygulanacakOran < oranYetki.BolgeOrani)
+                                    {
+                                        oranYetki.YetkiBirimi = KrediSicilYetkileri.GenelMudurluk;
+                                    }
+                                }
+                            }
+
+                            #endregion
+
+                            if (ScreenMode == ScreenModes.Workflow)
+                            {
+                                #region KrediIsAkisi BolgeVeyaBirimDegisiklikYapti Not: Sadece iş akışında
+
+                                DTOOranYetki oranYetkiEskiOran = LstOranYetkiSube.Find(s => s.OranYetkiTipi == oranYetki.OranYetkiTipi);
+                                if (oranYetkiEskiOran != null)
+                                {
+                                    if (oranYetki.UygulanacakOran < oranYetkiEskiOran.UygulanacakOran)
+                                    {
+                                        if (KrediIsAkisi.SicilYetkisi != KrediSicilYetkileri.Sube)
+                                            Messages.ShowWarningMessage(Mesaj.TALEP_EDILEN_DEGERIN_ALTINDA_BIR_DEGER_TALEP_EDEMEZSINIZ, new string[] { oranYetki.OranYetkiTipi.ToString() });
+                                        oranYetki.UygulanacakOran = oranYetkiEskiOran.UygulanacakOran;
+                                    }
+
+                                    if (oranYetki.UygulanacakOran != oranYetkiEskiOran.UygulanacakOran)
+                                    {
+                                        KrediIsAkisi.BolgeVeyaBirimDegisiklikYapti = true;
+                                        IsAkisiBilgi.BirimDegisiklikYaptiMi = true;
+                                    }
+                                }
+
+                                #endregion
+
+                                #region Oran değiştiği zaman Onaya Konu Değişken silinir
+
+                                List<DTOYetkiNedenKontrol> lstYetkiNedenKontrol = new List<DTOYetkiNedenKontrol>();
+                                if (LstYetkiNedenKontrol != null && LstYetkiNedenKontrol.Count > 0)
+                                    lstYetkiNedenKontrol = LstYetkiNedenKontrol.ToList<DTOYetkiNedenKontrol>();
+                                DTOYetkiNedenKontrol yetkiNedenKontrolOran = lstYetkiNedenKontrol.Find(s => (KrediYetkiNedenKodlari)s.KrediYetkiNedenKodu == yetkiNedenKoduOran);
+                                if (yetkiNedenKontrolOran != null)
+                                {
+                                    yetkiNedenKontrolOran.OnayaKonuDegisken = string.Empty;
+                                    yetkiNedenKontrolOran.Durum = false;
+                                    yetkiNedenKontrolOran.IsValidDurum = false;
+                                }
+                                this.LstYetkiNedenKontrol = new ObservableCollection<DTOYetkiNedenKontrol>(lstYetkiNedenKontrol);
+
+                                #endregion
+                            }
+
+                            yukleOran(LstOranYetki.ToList(), 0); //TODO
+
+                            #region İş Akışında bölge veya Genel Müdürlük değişiklik yaptıysa
+
+                            if (ScreenMode == ScreenModes.Workflow)
+                            {
+                                //İş Akışında bölge veya Genel Müdürlük değişiklik yaptıysa
+                                if (KrediIsAkisi.BolgeVeyaBirimDegisiklikYapti == true)
+                                {
+                                    //todo:Itfa tekrar hesaplanmalı
+                                }
+                            }
+
+                            #endregion
+
+                            YetkiYonetimi.LstOranYetki.Remove(oncekiOranYetki);
+                            YetkiYonetimi.LstOranYetki.Add(oranYetki);
+                            YetkiYonetimi.LstYetkiNeden = new List<LDTOYetkiNeden>() { new LDTOYetkiNeden() { YetkiNedenKodu = yetkiNedenKoduOran } };
+                            YetkiYonetimi.Olustur();
+
+                        }
+                        else
+                        {
+                            oranYetki.UygulanacakOran = oncekiOranYetki.UygulanacakOran;
+                        }
+
+                        break;
+                }
+
+                LstOranYetkiDegisimOncesi = ObjectCloner.ListClone<DTOOranYetki>(this.LstOranYetki.ToList());
+
+                oranYetki.PropertyChanged += oranYetki_PropertyChanged;
+
+            }
+        }
+
+        #region Yetki Private Method
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="pcea"></param>
+        private void yetkiYonetimi_PropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs pcea)
+        {
+            //YetkiYonetimiApp yetkiYonetimi = sender as YetkiYonetimiApp;
+            YetkiYonetimiUI yetkiYonetimi = sender as YetkiYonetimiUI;
+
+            if (yetkiYonetimi != null)
+            {
+                try
+                {
+                    switch (pcea.PropertyName)
+                    {
+                        case "LstYetkiNedenKontrol":
+
+                            LstYetkiNedenKontrol = new ObservableCollection<DTOYetkiNedenKontrol>(YetkiYonetimi.LstYetkiNedenKontrol);
+
+                            break;
+                    }
+
+                }
+                catch (BaseException be)
+                {
+                    Messages.ShowWarningMessage(Peak.Common.Krediler.TaksitliTicari.Constants.Mesaj.HATA, be.ToString());
+                    _hataYonetimi.EkleHata(new Hata() { HataTipi = Utility.Enums.HataTipleri.YetkiPropertyChangedHatasi, HataAciklamasi = be.ToString() });
+                }
+                catch (Exception ex)
+                {
+                    Messages.ShowWarningMessage(Peak.Common.Krediler.TaksitliTicari.Constants.Mesaj.HATA, ex.ToString());
+                    _hataYonetimi.EkleHata(new Hata() { HataTipi = Utility.Enums.HataTipleri.YetkiPropertyChangedHatasi, HataAciklamasi = ex.ToString() });
+                }
+            }
+        }
+
+        #endregion
+
+        #endregion Private Methods
+
+        private string okuMusteriAdSoyadUnvan(string musteriNo)
+        {
+            string musteriUnvani = string.Empty;
+
+            DTOMusteriGercek musteriGercek = null;
+            DTOMusteriTuzel musteriTuzel = null;
+            List<DTOMusteriSektor> lstMusteriSektor;
+
+            DTOMusteri musteri = okuMusteri(musteriNo, out musteriGercek, out musteriTuzel, out lstMusteriSektor);
+            musteri = musteri ?? new DTOMusteri();
+            if (musteri.MusteriTipi == MusteriTipleri.Gercek || musteri.MusteriTipi == MusteriTipleri.Ticari)
+            {
+                musteriUnvani = string.Format("{0} {1}", musteriGercek.Ad, musteriGercek.Soyad);
+            }
+            else
+            {
+                if (!string.IsNullOrWhiteSpace(musteriTuzel.TuzelUnvani))
+                {
+                    musteriUnvani = musteriTuzel.TuzelUnvani;
+                }
+            }
+
+
+            return musteriUnvani;
+
+        }
+
+        private DTOMusteri okuMusteri(string musteriNo, out DTOMusteriGercek musteriGercek, out DTOMusteriTuzel musteriTuzel, out List<DTOMusteriSektor> lstMusteriSektor)
+        {
+            if (String.IsNullOrEmpty(musteriNo))
+            {
+                musteriGercek = null;
+                musteriTuzel = null;
+                lstMusteriSektor = null;
+                return null;
+            }
+
+            RequestMessage request = new RequestMessage();
+            request.Add(new DTOMusteri
+            {
+                MusteriNo = musteriNo
+            });
+
+            using (var proxy = Service.CreateProxy<ISMusteri>(this))
+            {
+                //response = proxy.OkuMusteri(request);
+                ResponseMessage response = proxy.OkuMusteriTumBilgiler(request);
+
+                musteriGercek = response.Get<DTOMusteriGercek>();
+                musteriTuzel = response.Get<DTOMusteriTuzel>();
+                lstMusteriSektor = response.Get<List<DTOMusteriSektor>>();
+
+                return response.Get<DTOMusteri>();
+            }
+        }
+
+        #region Constructors
+
+        /// <summary>
+        /// Constructor
+        /// </summary>
+        public TKRTEXMGUNVM(UItemEditScreen screen)
+            : base(screen)
+        {
+            //_fiyatGetirCommand = new DelegateCommand(actionFiyatGetir);
+            _hesaplaCommand = new DelegateCommand(actionHesapla);
+            _ekleItfaCommand = new DelegateCommand(actionEkleItfa);
+            _acGeriOdemeEkraniCommand = new DelegateCommand(actionAcGeriOdemeEkrani);
+            _rowDeleted = new DelegateCommand(actionRowDeleted);
+        }
+
+        #endregion Constructors
+
+        #region Public Properties
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public DelegateCommand RowDeleted
+        {
+            get { return _rowDeleted; }
+            set
+            {
+                if (_rowDeleted != value)
+                {
+                    _rowDeleted = value;
+
+                    OnPropertyChanged("RowDeleted");
+                }
+            }
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public bool EklenenItfaAktifMi
+        {
+            get { return _eklenenItfaAktifMi; }
+            set
+            {
+                if (_eklenenItfaAktifMi != value)
+                {
+                    _eklenenItfaAktifMi = value;
+
+                    OnPropertyChanged("EklenenItfaAktifMi");
+                }
+            }
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public DelegateCommand EkleItfaCommand
+        {
+            get { return _ekleItfaCommand; }
+            set { _ekleItfaCommand = value; }
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public DelegateCommand AcGeriOdemeEkraniCommand
+        {
+            get { return _acGeriOdemeEkraniCommand; }
+            set { _acGeriOdemeEkraniCommand = value; }
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public bool SubeBirimAktifMi
+        {
+            get { return _subeBirimAktifMi; }
+            set
+            {
+                if (_subeBirimAktifMi != value)
+                {
+                    _subeBirimAktifMi = value;
+
+                    OnPropertyChanged("SubeBirimAktifMi");
+                }
+            }
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public string SubeMiBirimMi
+        {
+            get { return _subeMiBirimMi; }
+            set
+            {
+                if (_subeMiBirimMi != value)
+                {
+                    _subeMiBirimMi = value;
+
+                    if (_subeMiBirimMi.Equals("S"))
+                    {
+                        SubeBirimAktifMi = false;
+                        KomisyonOraniDegistirebilirMi = true;
+                        YeniKayitEkleyebilirMi = Visibility.Collapsed;
+                        SubeBirimItfaEditMode = EditModes.UpdateOnly;
+                        OranYetkiGridVisible = Visibility.Visible;
+                        YetkiBilgileriPanelVisible = Visibility.Visible;
+                    }
+                    if (_subeMiBirimMi.Equals("B"))
+                    {
+                        SubeBirimAktifMi = true;
+                        KomisyonOraniDegistirebilirMi = false;
+                        YeniKayitEkleyebilirMi = Visibility.Visible;
+                        SubeBirimItfaEditMode = EditModes.UpdateDelete;
+                        OranYetkiGridVisible = Visibility.Collapsed;
+                        YetkiBilgileriPanelVisible = Visibility.Collapsed;
+                    }
+
+                    OnPropertyChanged("SubeMiBirimMi");
+                }
+            }
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public DTOTicariTaksitliHesap TicariTaksitliHesap
+        {
+            get { return _ticariTaksitliHesap; }
+            set
+            {
+                if (_ticariTaksitliHesap != value)
+                {
+                    _ticariTaksitliHesap = value;
+                    OnPropertyChanged("TicariTaksitliHesap");
+                }
+            }
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public DTOEximBankKredi IslemYapilanEximRef
+        {
+            get { return _islemYapilanEximRef; }
+            set
+            {
+                if (_islemYapilanEximRef != value)
+                {
+                    _islemYapilanEximRef = value;
+                    OnPropertyChanged("IslemYapilanEximRef");
+                }
+            }
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public bool HesaplaButonunaBasildi
+        {
+            get { return _hesaplaButonunaBasildi; }
+            set
+            {
+                if (_hesaplaButonunaBasildi != value)
+                {
+                    _hesaplaButonunaBasildi = value;
+                    OnPropertyChanged("HesaplaButonunaBasildi");
+                }
+            }
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public DTOIsAkisiBilgi IsAkisiBilgi
+        {
+            get { return _isAkisiBilgi; }
+            set
+            {
+                if (_isAkisiBilgi != value)
+                {
+                    _isAkisiBilgi = value;
+                    OnPropertyChanged("IsAkisBilgi");
+                }
+            }
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public List<DTOAksamaDetay> LstAksamaDetay
+        {
+            get { return _lstAksamaDetay; }
+            set
+            {
+                if (_lstAksamaDetay != value)
+                {
+                    _lstAksamaDetay = value;
+                    OnPropertyChanged("LstAksamaDetay");
+                }
+            }
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public DTOYenidenYapilandir YenidenYapilandir
+        {
+            get { return _yenidenYapilandir; }
+            set
+            {
+                if (_yenidenYapilandir != value)
+                {
+                    _yenidenYapilandir = value;
+                    OnPropertyChanged("YenidenYapilandir");
+                }
+            }
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public List<KrediYetkiNedenKodlari> LstDurumuOnaylanmamisYetki
+        {
+            get
+            {
+                return _lstDurumuOnaylanmamisYetki;
+            }
+            set
+            {
+                if (_lstDurumuOnaylanmamisYetki != value)
+                {
+                    _lstDurumuOnaylanmamisYetki = value;
+                    OnPropertyChanged("LstDurumuOnaylanmamisYetki");
+                }
+            }
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>        
+        [WorkflowPropertyAssignmentOrder(22, InitializationBehaviourTypes.AfterAlphabetical)]
+        public List<DTOYetkiNedenKontrol> LstIsAkisiYetkiNedenKontrol
+        {
+            get
+            {
+                if (_lstIsAkisiYetkiNedenKontrol == null)
+                    _lstIsAkisiYetkiNedenKontrol = new List<DTOYetkiNedenKontrol>();
+
+                return _lstIsAkisiYetkiNedenKontrol;
+            }
+            set
+            {
+                if (_lstIsAkisiYetkiNedenKontrol != value)
+                {
+                    _lstIsAkisiYetkiNedenKontrol = value;
+                    OnPropertyChanged("LstIsAkisiYetkiNedenKontrol");
+                }
+            }
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        [WorkflowPropertyAssignmentOrder(21, InitializationBehaviourTypes.AfterAlphabetical)]
+        public ObservableCollection<DTOYetkiNedenKontrol> LstYetkiNedenKontrol
+        {
+            get
+            {
+                return _lstYetkiNedenKontrol;
+            }
+            set
+            {
+                if (_lstYetkiNedenKontrol != value)
+                {
+                    _lstYetkiNedenKontrol = value;
+                    OnPropertyChanged("LstYetkiNedenKontrol");
+
+                    List<DTOYetkiNedenKontrol> lstYetkiNedenKontrol = new List<DTOYetkiNedenKontrol>();
+
+                    if (LstYetkiNedenKontrol != null)
+                        lstYetkiNedenKontrol = LstYetkiNedenKontrol.ToList();
+
+                    LstIsAkisiYetkiNedenKontrol = lstYetkiNedenKontrol;
+                }
+            }
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public List<DTOOranYetki> LstOranYetkiSube
+        {
+            get { return _lstOranYetkiSube; }
+            set
+            {
+                if (_lstOranYetkiSube != value)
+                {
+                    _lstOranYetkiSube = value;
+                    OnPropertyChanged("LstOranYetkiSube");
+
+                }
+            }
+        }
+
+        public DTOMusteriGercek MusteriGercek
+        {
+            get { return _musteriGercek; }
+            set
+            {
+                if (_musteriGercek != value)
+                {
+                    _musteriGercek = value;
+                    OnPropertyChanged("MusteriGercek");
+                }
+            }
+        }
+
+        public DTOMusteri Musteri
+        {
+            get { return _musteri; }
+            set
+            {
+                if (_musteri != value)
+                {
+                    _musteri = value;
+                    OnPropertyChanged("Musteri");
+                }
+            }
+        }
+
+        [WorkflowPropertyAssignmentOrder(60, InitializationBehaviourTypes.AfterAlphabetical)]
+        public YetkiYonetimiUI YetkiYonetimi
+        {
+            get
+            {
+                return _yetkiYonetimi;
+            }
+            set
+            {
+                if (_yetkiYonetimi != value)
+                {
+                    if (_yetkiYonetimi != null)
+                        _yetkiYonetimi.PropertyChanged -= yetkiYonetimi_PropertyChanged;
+
+                    _yetkiYonetimi = value;
+
+                    if (_yetkiYonetimi != null)
+                        _yetkiYonetimi.PropertyChanged += yetkiYonetimi_PropertyChanged;
+                    OnPropertyChanged("YetkiYonetimi");
+                }
+            }
+        }
+
+        public FiyatlamaYonetimi FiyatlamaYonetimi
+        {
+            get { return _fiyatlamaYonetimi; }
+            set
+            {
+                if (_fiyatlamaYonetimi != value)
+                {
+                    _fiyatlamaYonetimi = value;
+                    OnPropertyChanged("FiyatlamaYonetimi");
+                }
+            }
+        }
+
+        public FiyatlamaSorgu FiyatlamaSorgu
+        {
+            get { return _fiyatlamaSorgu; }
+            set
+            {
+                if (_fiyatlamaSorgu != value)
+                {
+                    if (_fiyatlamaSorgu != null)
+                        _fiyatlamaSorgu.PropertyChanged -= fiyatlamaSorgu_PropertyChanged;
+
+                    _fiyatlamaSorgu = value;
+
+                    if (_fiyatlamaSorgu != null)
+                        _fiyatlamaSorgu.PropertyChanged += fiyatlamaSorgu_PropertyChanged;
+
+                    OnPropertyChanged("FiyatlamaSorgu");
+
+                }
+            }
+        }
+
+        public EnableParametre EkranEnable
+        {
+            get
+            {
+                return _ekranEnable;
+            }
+            set
+            {
+                if (_ekranEnable != value)
+                {
+                    _ekranEnable = value;
+                    OnPropertyChanged("EkranEnable");
+                }
+            }
+        }
+
+        [WorkflowPropertyAssignmentOrder(130, InitializationBehaviourTypes.AfterAlphabetical)]
+        public LDTOKrediReferansBilgi MusteriBilgisi
+        {
+            get
+            {
+                return _musteriBilgisi;
+            }
+            set
+            {
+                if (_musteriBilgisi != value)
+                {
+                    _musteriBilgisi = value;
+                    OnPropertyChanged("MusteriBilgisi");
+                }
+            }
+        }
+
+        [WorkflowPropertyAssignmentOrder(90, InitializationBehaviourTypes.AfterAlphabetical)]
+        public DTOKrediIsAkisi KrediIsAkisi
+        {
+            get
+            {
+                return _krediIsAkisi;
+            }
+            set
+            {
+                if (_krediIsAkisi != value)
+                {
+                    if (_krediIsAkisi != null)
+                        _krediIsAkisi.PropertyChanged -= krediIsAkisi_PropertyChanged;
+
+                    _krediIsAkisi = value;
+
+                    if (_krediIsAkisi != null)
+                        _krediIsAkisi.PropertyChanged += krediIsAkisi_PropertyChanged;
+
+                    OnPropertyChanged("KrediIsAkisi");
+                }
+            }
+        }
+
+        public DTOFisEkBilgi FisEkBilgi
+        {
+            get
+            {
+                return _fisEkBilgi;
+            }
+            set
+            {
+                if (_fisEkBilgi != value)
+                {
+                    _fisEkBilgi = value;
+                    OnPropertyChanged("FisEkBilgi");
+                }
+            }
+        }
+
+        public LDTOFisBilgi FisBilgi
+        {
+            get
+            {
+                return _fisBilgi;
+            }
+            set
+            {
+                if (_fisBilgi != value)
+                {
+                    _fisBilgi = value;
+                    OnPropertyChanged("FisBilgi");
+                }
+            }
+        }
+
+        [WorkflowPropertyAssignmentOrder(40, InitializationBehaviourTypes.AfterAlphabetical)]
+        public TaksitliKrediTurleri TaksitliKrediTuru
+        {
+            get { return _taksitliKrediTuru; }
+            set
+            {
+                if (_taksitliKrediTuru != value)
+                {
+                    _taksitliKrediTuru = value;
+                    OnPropertyChanged("TaksitliKrediTuru");
+                }
+            }
+        }
+
+        public LDTOKullandirimIsVisibleParametre EkranIsVisible
+        {
+            get
+            {
+                return _ekranIsVisible;
+            }
+            set
+            {
+                if (_ekranIsVisible != value)
+                {
+                    _ekranIsVisible = value;
+                    OnPropertyChanged("EkranIsVisible");
+                }
+            }
+        }
+
+        public List<DTOOranYetki> LstOranYetkiDegisimOncesi
+        {
+            get { return _lstOranYetkiDegisimOncesi; }
+            set
+            {
+                if (_lstOranYetkiDegisimOncesi != value)
+                {
+                    _lstOranYetkiDegisimOncesi = value;
+                    OnPropertyChanged("LstOranYetkiDegisimOncesi");
+                }
+            }
+        }
+
+
+        /// <summary>
+        /// 
+        /// </summary>
+        [WorkflowPropertyAssignmentOrder(160, InitializationBehaviourTypes.AfterAlphabetical)]
+        public ObservableCollection<DTOOranYetki> LstOranYetki
+        {
+            get
+            {
+                return _lstOranYetki;
+            }
+            set
+            {
+                if (_lstOranYetki != value)
+                {
+                    _lstOranYetki = value;
+
+                    OnPropertyChanged("LstOranYetki");
+
+                    if (_propertyAktif == true)
+                    {
+                        List<DTOOranYetki> lstOranYetki = new List<DTOOranYetki>();
+                        if (value != null)
+                        {
+                            lstOranYetki = value.ToList();
+                        }
+
+                        yukleOran(lstOranYetki, 0);
+
+                        LstIsAkisiOranYetki = lstOranYetki;
+
+                        LstOranYetkiDegisimOncesi = ObjectCloner.ListClone<DTOOranYetki>(lstOranYetki);
+
+                        YetkiYonetimi.LstOranYetki = ObjectCloner.ListClone<DTOOranYetki>(lstOranYetki);
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public List<DTOOranYetki> LstIsAkisiOranYetki
+        {
+            get
+            {
+                if (_lstIsAkisiOranYetki == null)
+                    _lstIsAkisiOranYetki = new List<DTOOranYetki>();
+
+                return _lstIsAkisiOranYetki;
+            }
+            set
+            {
+                if (_lstIsAkisiOranYetki != value)
+                {
+                    _lstIsAkisiOranYetki = value;
+
+                    OnPropertyChanged("LstIsAkisiOranYetki");
+                }
+            }
+        }
+
+        #region VIEW Model
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public int OdenecekTaksitNo
+        {
+            get
+            {
+                return _odenecekTaksitNo;
+            }
+            set
+            {
+                if (_odenecekTaksitNo != value)
+                {
+                    _odenecekTaksitNo = value;
+                    OnPropertyChanged("OdenecekTaksitNo");
+                }
+            }
+        }
+
+        /// <summary>
+        /// EXIMBank Referans Koduna bağlı Ticari Kredi Hesabının Yeni ITFA Bilgilerini Tutulur.
+        /// </summary>
+        public ObservableCollection<LDTOTicariTaksitliKrediBilgiIfa> YeniItfa
+        {
+            get
+            {
+                return _dtoYeniItfa;
+            }
+            set
+            {
+                if (_dtoYeniItfa != value)
+                {
+                    if (_dtoYeniItfa != null)
+                        _dtoYeniItfa.CollectionChanged -= YeniItfa_CollectionChanged;
+
+                    _dtoYeniItfa = value;
+
+                    YeniItfa.CollectionChanged += YeniItfa_CollectionChanged;
+
+                    OnPropertyChanged("YeniItfa");
+                }
+            }
+        }
+
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public LDTOTicariTaksitliKrediBilgiIfa EklenenItfa
+        {
+            get
+            {
+                return _dtoEklenenItfa;
+            }
+            set
+            {
+                if (_dtoEklenenItfa != value)
+                {
+                    _dtoEklenenItfa = value;
+
+                    OnPropertyChanged("EklenenItfa");
+                }
+            }
+        }
+
+
+
+        /// <summary>
+        /// 
+        /// </summary>
+        [WorkflowPropertyAssignmentOrder(6000, InitializationBehaviourTypes.AfterAlphabetical)]
+        public List<LDTOItfaHesaplamaSablonu> LstRevizyonHesaplamaSablonu
+        {
+            get
+            {
+                return _lstRevizyonHesaplamaSablonu;
+            }
+            set
+            {
+                if (_lstRevizyonHesaplamaSablonu != value)
+                {
+                    _lstRevizyonHesaplamaSablonu = value;
+                    OnPropertyChanged("LstRevizyonHesaplamaSablonu");
+
+                }
+            }
+        }
+
+        public ObservableCollection<FiyatlamaYonetimi> YeniFiyatlama
+        {
+            get
+            {
+                return _dtoYeniFiyatlama;
+            }
+            set
+            {
+                if (_dtoYeniFiyatlama != value)
+                {
+                    _dtoYeniFiyatlama = value;
+                    OnPropertyChanged("YeniFiyatlama");
+                }
+            }
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public LDTOItfaTetikle ItfaTetikle
+        {
+            get
+            {
+                return _itfaTetikle;
+            }
+            set
+            {
+                if (_itfaTetikle != value)
+                {
+                    _itfaTetikle = value;
+                    OnPropertyChanged("ItfaTetikle");
+                }
+            }
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public LDTOItfaParametre ItfaParametre
+        {
+            get
+            {
+                return _itfaParametre;
+            }
+            set
+            {
+
+                if (_itfaParametre != value)
+                {
+                    if (_itfaParametre != null)
+                        _itfaParametre.PropertyChanged -= itfaParametre_PropertyChanged;
+
+                    _itfaParametre = value;
+
+
+                    if (_itfaParametre != null)
+                        _itfaParametre.PropertyChanged += itfaParametre_PropertyChanged;
+
+                    OnPropertyChanged("ItfaParametre");
+                }
+
+            }
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public DTOTicariTaksitliHesap TaksitliHesap
+        {
+            get
+            {
+                return _taksitliHesap;
+            }
+            set
+            {
+                if (_taksitliHesap != value)
+                {
+                    _taksitliHesap = value;
+                    OnPropertyChanged("TaksitliHesap");
+                }
+            }
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public LDTOUrunYetki UrunYetki
+        {
+            get
+            {
+                return _urunYetki;
+            }
+            set
+            {
+                if (_urunYetki != value)
+                {
+                    _urunYetki = value;
+                    OnPropertyChanged("UrunYetki");
+                }
+            }
+        }
+
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public LDTOTicariTaksitliKrediBilgiIfa SecilenItfa
+        {
+            get
+            {
+                return _secilenItfa;
+            }
+            set
+            {
+                if (_secilenItfa != value)
+                {
+                    if (_secilenItfa != null)
+                        _secilenItfa.PropertyChanged -= secilenItfa_PropertyChanged;
+
+                    _secilenItfaDegismedenOnce = ObjectCloner.Clone(_secilenItfa);
+
+                    _secilenItfa = value;
+                    _secilenItfaClone = ObjectCloner.Clone(_secilenItfa);
+
+                    if (_secilenItfa != null)
+                    {
+                        _secilenItfa.PropertyChanged += secilenItfa_PropertyChanged;
+                    }
+
+                    OnPropertyChanged("SecilenItfa");
+                }
+            }
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public LDTOTicariTaksitliKrediBilgiIfa SilinenItfa
+        {
+            get
+            {
+                return _secilenItfa;
+            }
+            set
+            {
+                if (_secilenItfa != value)
+                {
+                    if (_secilenItfa != null)
+                        _secilenItfa.PropertyChanged -= secilenItfa_PropertyChanged;
+
+                    _secilenItfaDegismedenOnce = ObjectCloner.Clone(_secilenItfa);
+
+                    _secilenItfa = value;
+
+
+                    if (_secilenItfa != null)
+                    {
+                        _secilenItfa.PropertyChanged += secilenItfa_PropertyChanged;
+                    }
+
+                    OnPropertyChanged("SecilenItfa");
+                }
+            }
+        }
+
+        public DTOTicariTaksitliItfaPlan TicariTaksitliItfaPlan
+        {
+            get
+            {
+                return _ticariTaksitliItfaPlan;
+            }
+            set
+            {
+                if (_ticariTaksitliItfaPlan != value)
+                {
+                    _ticariTaksitliItfaPlan = value;
+                }
+            }
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        [WorkflowPropertyAssignmentOrder(170, InitializationBehaviourTypes.AfterAlphabetical)]
+        public DTOTaksitliKullandirim TaksitliKullandirim
+        {
+            get
+            {
+                return _taksitliKullandirim;
+            }
+            set
+            {
+                if (_taksitliKullandirim != value)
+                {
+                    if (_taksitliKullandirim != null)
+                        _taksitliKullandirim.PropertyChanged -= taksitliKullandirim_PropertyChanged;
+
+                    _taksitliKullandirim = value;
+                    _taksitliKullandirimDegisimOncesi = value;
+
+                    if (_taksitliKullandirim != null)
+                        _taksitliKullandirim.PropertyChanged += taksitliKullandirim_PropertyChanged;
+
+                    OnPropertyChanged("TaksitliKullandirim");
+                }
+            }
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        [WorkflowPropertyAssignmentOrder(7000, InitializationBehaviourTypes.AfterAlphabetical)]
+        public List<LDTOItfaHesaplamaSablonu> LstItfaHesaplamaSablonu
+        {
+            get
+            {
+                return _lstItfaHesaplamaSablonu;
+            }
+            set
+            {
+                if (_lstItfaHesaplamaSablonu != value)
+                {
+                    _lstItfaHesaplamaSablonu = value;
+                    OnPropertyChanged("LstItfaHesaplamaSablonu");
+                }
+            }
+        }
+
+
+        /// <summary>
+        /// EXIMBank Referans Koduna bağlı Ticari Kredi Hesabının Mevcut ITFA Bilgilerini Tutulur.
+        /// </summary>
+        public ObservableCollection<LDTOTicariTaksitliKrediBilgiIfa> MevcutItfa
+        {
+            get
+            {
+                return _dtoMevcutItfa;
+            }
+            set
+            {
+
+                if (_dtoMevcutItfa == null || _dtoMevcutItfa.Count <= 0)
+                {
+                    _dtoMevcutItfa = value;
+                    OnPropertyChanged("MevcutItfa");
+                }
+
+                if (_mevcutItfaDegisecek == true)
+                {
+                    if (_dtoMevcutItfa != value)
+                    {
+                        _dtoMevcutItfa = value;
+
+                        OnPropertyChanged("MevcutItfa");
+                    }
+                }
+
+            }
+        }
+
+
+
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public bool KrediHesapTemizle
+        {
+            get
+            {
+                return _krediHesapTemizle;
+            }
+            set
+            {
+                if (_krediHesapTemizle != value)
+                {
+                    _krediHesapTemizle = value;
+                    OnPropertyChanged("KrediHesapTemizle");
+                }
+            }
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public bool KrediHesapTetikle
+        {
+            get
+            {
+                return _krediHesapTetikle;
+            }
+            set
+            {
+                if (_krediHesapTetikle != value)
+                {
+                    _krediHesapTetikle = value;
+                    OnPropertyChanged("KrediHesapTetikle");
+                }
+            }
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public bool KomisyonOraniDegistir
+        {
+            get
+            {
+                return _komisyonOraniDegistir;
+            }
+            set
+            {
+                if (_komisyonOraniDegistir != value)
+                {
+                    _komisyonOraniDegistir = value;
+                    OnPropertyChanged("KomisyonOraniDegistir");
+                }
+            }
+        }
+        
+        /// <summary>
+        /// 
+        /// </summary>
+        public Visibility KrediHesapVisible
+        {
+            get
+            {
+                return _krediHesapVisible;
+            }
+            set
+            {
+                if (_krediHesapVisible != value)
+                {
+                    _krediHesapVisible = value;
+                    OnPropertyChanged("KrediHesapVisible");
+                }
+            }
+        }
+
+
+        
+               /// <summary>
+        /// 
+        /// </summary>
+        public LDTOKrediHesap SelectedDtoKrediHesap
+        {
+            get
+            {
+                return _selectedDtoKrediHesap;
+            }
+            set
+            {
+                if (_selectedDtoKrediHesap != value)
+                {
+                    _selectedDtoKrediHesap = value;
+                    OnPropertyChanged("SelectedDtoKrediHesap");
+                }
+            }
+        }
+
+          /// <summary>
+        /// 
+        /// </summary>
+        public KrediHesapBileseniAramaTurleri KrediHesapAramaTurleri
+        {
+            get
+            {
+                return _krediHesapAramaTurleri;
+            }
+            set
+            {
+                if (_krediHesapAramaTurleri != value)
+                {
+                    _krediHesapAramaTurleri = value;
+                    OnPropertyChanged("KrediHesapAramaTurleri");
+                }
+            }
+        }
+        
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public Visibility YetkiBilgileriPanelVisible
+        {
+            get
+            {
+                return _yetkiBilgileriPanelVisible;
+            }
+            set
+            {
+                if (_yetkiBilgileriPanelVisible != value)
+                {
+                    _yetkiBilgileriPanelVisible = value;
+                    OnPropertyChanged("YetkiBilgileriPanelVisible");
+                }
+            }
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public Visibility OranYetkiGridVisible
+        {
+            get
+            {
+                return _oranYetkiGridVisible;
+            }
+            set
+            {
+                if (_oranYetkiGridVisible != value)
+                {
+                    _oranYetkiGridVisible = value;
+                    OnPropertyChanged("OranYetkiGridVisible");
+                }
+            }
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public bool ReferansKoduEditable
+        {
+            get
+            {
+                return _referansKoduEditable;
+            }
+            set
+            {
+                if (_referansKoduEditable != value)
+                {
+                    _referansKoduEditable = value;
+                    OnPropertyChanged("ReferansKoduEditable");
+                }
+            }
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public EditModes SubeBirimItfaEditMode
+        {
+            get
+            {
+                return _subeBirimItfaEditMode;
+            }
+            set
+            {
+                if (_subeBirimItfaEditMode != value)
+                {
+                    _subeBirimItfaEditMode = value;
+                    OnPropertyChanged("SubeBirimItfaEditMode");
+                }
+            }
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public Visibility YeniKayitEkleyebilirMi
+        {
+            get
+            {
+                return _yeniKayitEkleyebilirMi;
+            }
+            set
+            {
+                if (_yeniKayitEkleyebilirMi != value)
+                {
+                    _yeniKayitEkleyebilirMi = value;
+                    OnPropertyChanged("YeniKayitEkleyebilirMi");
+                }
+            }
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public bool KomisyonOraniDegistirebilirMi
+        {
+            get
+            {
+                return _komisyonOraniDegistirebilirMi;
+            }
+            set
+            {
+                if (_komisyonOraniDegistirebilirMi != value)
+                {
+                    _komisyonOraniDegistirebilirMi = value;
+                    OnPropertyChanged("KomisyonOraniDegistirebilirMi");
+                }
+            }
+        }
+
+        /// <summary>
+        /// EkranKapanisKontrol
+        /// </summary>
+        public DTOEximBankKredi EkranKapanisKontrol
+        {
+            get
+            {
+                return _ekranKapanisKontrol;
+            }
+            set
+            {
+                if (_ekranKapanisKontrol != value)
+                {
+                    _ekranKapanisKontrol = value;
+                    OnPropertyChanged("EkranKapanisKontrol");
+                }
+            }
+        }
+
+        /// <summary>
+        /// KrediHesapNo
+        /// </summary>
+        public long KrediHesapNo
+        {
+            get
+            {
+                return _krediHesapNo;
+            }
+            set
+            {
+                if (_krediHesapNo != value)
+                {
+                    _krediHesapNo = value;
+                    OnPropertyChanged("KrediHesapNo");
+                }
+            }
+        }
+
+        /// <summary>
+        /// Musteri Adı
+        /// </summary>
+        public string MusteriAdi
+        {
+            get
+            {
+                return _musteriAdi;
+            }
+            set
+            {
+                if (_musteriAdi != value)
+                {
+                    _musteriAdi = value;
+                    OnPropertyChanged("MusteriAdi");
+                }
+            }
+        }
+
+        /// <summary>
+        /// Musteri No
+        /// </summary>
+        public string MusteriNo
+        {
+            get
+            {
+                return _musteriNo;
+            }
+            set
+            {
+                if (_musteriNo != value)
+                {
+                    _musteriNo = value;
+
+                    //KrediHesapTetikle = false;
+                    //KrediHesapTetikle = true;
+
+                    OnPropertyChanged("MusteriNo");
+                }
+            }
+        }
+
+        /// <summary>
+        /// Arama kriterleri alanında kullanılacak olan DTO nesnesi.
+        /// </summary>
+        public long EximFirmaKodu
+        {
+            get
+            {
+                return _eximFirmaKodu;
+            }
+            set
+            {
+                if (ScreenMode != ScreenModes.Workflow)
+                {
+                    if (this.ScreenParameters == null)
+                    {
+
+                    }
+                    else if (_eximFirmaKodu != value && this.ScreenParameters.Items.Count > 0)
+                    {
+                        if (value != 0)
+                        {
+                            //tahDTO = ScreenParameters.Get<BaseDataTransferObject>("EkranYonetimi");
+
+                            _eximFirmaKodu = value;
+                            _valueControl = false;
+                            OnPropertyChanged("EximFirmaKodu");
+                            //OnPropertyChanged("FirmaMusteriNo");
+                        }
+                    }
+                    else if (_eximFirmaKodu != value && this.ScreenParameters.Items.Count == 0)
+                    {
+                        _eximFirmaKodu = value;
+                        OnPropertyChanged("EximFirmaKodu");
+                        //OnPropertyChanged("FirmaMusteriNo");
+                    }
+
+                    if (_eximFirmaKodu != null && _eximFirmaKodu != 0)
+                    {
+                        EximReferansKoduEnabled = AccessModes.Editable;
+                    }
+                    else
+                    {
+                        EximReferansKoduEnabled = AccessModes.NonEditable;
+                    }
+                }
+                else
+                {
+                    if (value > 0)
+                    {
+                        _eximFirmaKodu = value;
+                        OnPropertyChanged("EximFirmaKodu");
+                    }
+                    if (_eximFirmaKodu != null && _eximFirmaKodu != 0)
+                    {
+                        EximReferansKoduEnabled = AccessModes.Editable;
+                    }
+                    else
+                    {
+                        EximReferansKoduEnabled = AccessModes.NonEditable;
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Okuma sonucu.
+        /// </summary>
+        public List<DTOEximBankKredi> EximBankReferanslari
+        {
+            get
+            {
+                return _dtoEximBankReferanslari;
+            }
+            set
+            {
+                if (_dtoEximBankReferanslari != value)
+                {
+                    _dtoEximBankReferanslari = value;
+                    OnPropertyChanged("EximBankReferanslari");
+                }
+            }
+        }
+
+
+
+        /// <summary>
+        /// Okuma sonucu.
+        /// </summary>
+        [WorkflowPropertyAssignmentOrder (1, InitializationBehaviourTypes.AfterAlphabetical)]
+        public DTOEximBankKredi SelectedEximBankReferansi
+        {
+            get
+            {
+                if (_selectedEximBankReferansi == null)
+                    return new DTOEximBankKredi();
+
+                return _selectedEximBankReferansi;
+            }
+            set
+            {
+
+
+                if (_selectedEximBankReferansi != value)
+                {
+
+                    _selectedEximBankReferansi = value;
+                    OnPropertyChanged("SelectedEximBankReferansi");
+
+                    if (ScreenMode != ScreenModes.Workflow)
+                    {
+                        if (value == null || value.EximReferansKodu <= 0)
+                            return;
+
+                        initializeOperation();
+
+                        hesabiOku(value.EximReferansKodu, value.DovizCinsi, value.MusteriNo, SelectedEximBankReferansi);
+                        itfaYukle(value.EximReferansKodu, value.DovizCinsi, value.MusteriNo);
+                        //setSession();
+
+                        string portfoyKodu;
+                        string portfoyAdi;
+
+                        DTOGenelPortfoyTakimMusteri genelPortfoyTakimMusteri = okuMusteriPortfoy(MusteriBilgisi.VbMusteriNo, out portfoyKodu, out portfoyAdi);//Session.Customer.CustomerNo 
+                        FiyatlamaSorgu.AltSegment = portfoyKodu;
+
+                        actionFiyatGetir(new Object());
+
+                        List<DTOAksamaDetay> lstAksamaDetay;
+                        YenidenYapilandir = getirYenidenYapilandirmaIle(MusteriBilgisi.VbMusteriNo, out lstAksamaDetay);//Session.Customer.CustomerNo
+                        LstAksamaDetay = lstAksamaDetay;
+
+                        EklenenItfaAktifMi = true;
+
+                        if (SelectedEximBankReferansi.DovizCinsi == "TL")
+                            TaksitliHesap.FaizTipi = KrediFaizTipleri.SabitFaiz;
+                        else
+                            TaksitliHesap.FaizTipi = KrediFaizTipleri.DegiskenFaiz;
+
+                        //Musteri Adı ve Nosu
+                        ResponseMessage res = new ResponseMessage();
+                        RequestMessage req = new RequestMessage();
+                        req.Clear();
+                        res.Clear();
+
+                        req.Add(SelectedEximBankReferansi);
+
+                        using (ISTaksitliTicari proxy = Service.CreateProxy<ISTaksitliTicari>(this))
+                        {
+                            res = proxy.GetirMusteriBilgisi(req);
+                        }
+
+                        if (res.Get<DTOMusteriTuzel>() != null)
+                            MusteriAdi = res.Get<DTOMusteriTuzel>().TuzelUnvani;
+                        else if (res.Get<DTOMusteriGercek>() != null)
+                            MusteriAdi = res.Get<DTOMusteriGercek>().Ad;
+
+
+
+                        MusteriNo = TaksitliHesap.MusteriNo;
+                        System.Diagnostics.Debug.WriteLine("TaksitliHesap.KrediHesapNo=" + TaksitliHesap.KrediHesapNo);
+                        System.Diagnostics.Debug.WriteLine("TaksitliHesap.UrunKodu=" + TaksitliHesap.UrunKodu);
+
+                        KrediHesapTetikle = false;
+                        KrediHesapTetikle = true;
+
+                        TABIndex = (int)_enumTabItems.TabItemYeniItfa;
+                    }
+                    else
+                    {
+                        MusteriNo = _selectedEximBankReferansi.MusteriNo;
+
+                        //KrediHesapTetikle = false;
+                        //KrediHesapTetikle = true;
+                    }
+
+                }
+
+            }
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public decimal MevcutKomisyonOrani
+        {
+            get
+            {
+                return _mevcutKomisyonOrani;
+            }
+            set
+            {
+                if (_mevcutKomisyonOraniDegisecek)
+                {
+                    if (_mevcutKomisyonOrani != value)
+                    {
+                        _mevcutKomisyonOrani = value;
+                        OnPropertyChanged("MevcutKomisyonOrani");
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public AccessModes EximReferansKoduEnabled
+        {
+            get
+            {
+                return _eximReferansKoduEnabled;
+            }
+            set
+            {
+                if (_eximReferansKoduEnabled != value)
+                {
+                    _eximReferansKoduEnabled = value;
+                    HesaplaButonunaBasildi = false;
+                    OnPropertyChanged("EximReferansKoduEnabled");
+                }
+            }
+        }
+
+        public decimal FaizOrani
+        {
+            get
+            {
+                return _faizOrani;
+            }
+            set
+            {
+                if (_faizOrani != value)
+                {
+                    _faizOrani = value;
+                    HesaplaButonunaBasildi = false;
+                    OnPropertyChanged("FaizOrani");
+                }
+            }
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public DTOOranYetki SecilenOranYetki
+        {
+            get
+            {
+                return _secilenOranYetki;
+            }
+            set
+            {
+                if (_secilenOranYetki != value)
+                {
+                    if (_secilenOranYetki != null)
+                        _secilenOranYetki.PropertyChanged -= oranYetki_PropertyChanged;
+
+                    _secilenOranYetki = value;
+
+                    if (_secilenOranYetki != null)
+                        _secilenOranYetki.PropertyChanged += oranYetki_PropertyChanged;
+
+                    OnPropertyChanged("SecilenOranYetki");
+                }
+            }
+        }
+
+        public List<LDTOTaksitliOran> TaksitliOran
+        {
+            get
+            {
+                return _lstTaksitliOran;
+            }
+            set
+            {
+                _lstTaksitliOran = value;
+            }
+        }
+
+        #endregion
+        #region LOCAL
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public int TABIndex
+        {
+            get
+            {
+                return _selectedTabIndex;
+            }
+            set
+            {
+                if (_selectedTabIndex != value)
+                {
+                    if (this.ScreenMode == ScreenModes.Workflow)
+                    {
+                        _selectedTabIndex = value;
+                        OnPropertyChanged("TABIndex");
+                    }
+                    else if (value > _selectedTabIndex)
+                    {
+
+                        if (tabItemKontrol(_selectedTabIndex, value))
+                        {
+                            _selectedTabIndex = value;
+                            OnPropertyChanged("TABIndex");
+                        }
+                        else
+                        {
+                            //todo: Uygun mesaj tanımı yapılacak; "tabItemKontrol" metodu DEFAULT "True" değeri dönüyor, içi doldurulacak.
+                            Messages.ShowWarningMessage("KTH0000037", new string[] { "Eksik Bilgi ..." });
+                        }
+                    }
+                    else
+                    {
+                        _selectedTabIndex = value;
+                        OnPropertyChanged("TABIndex");
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public bool EnableExpanderKayit
+        {
+            get
+            {
+                return _enableExpanderKayit;
+            }
+            set
+            {
+                if (_enableExpanderKayit != value)
+                {
+                    _enableExpanderKayit = value;
+                    OnPropertyChanged("EnableExpanderKayit");
+                }
+            }
+        }
+
+
+
+        #endregion
+
+
+        #endregion Public Properties
+
+        #region Public Methods
+
+        /// <summary>
+        /// Kayıt silinir.
+        /// </summary>
+        /// <returns></returns>
+        public override bool Delete()
+        {
+            System.Diagnostics.Debug.WriteLine("DELETE");
+            return true;
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <returns></returns>
+        public override bool BeforeLoad()
+        {
+
+            if (ScreenMode == ScreenModes.Workflow)
+            {
+                KrediHesapAramaTurleri = KrediHesapBileseniAramaTurleri.None;
+                KrediHesapVisible = Visibility.Collapsed;
+                KrediHesapTetikle = false;
+            }
+            
+            return base.BeforeLoad();
+        }
+
+        /// <summary>
+        /// Ekran açılışında yapılacak işlemler.
+        /// </summary>
+        /// <returns></returns>
+        public override bool Load()
+        {
+            KrediHesapTetikle = false;
+            IsNewVisible = false;
+            IsDeleteVisible = false;
+            IsInsertVisible = false;
+
+          
+          
+
+            return true;
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public override void AfterLoad()
+        {
+            _propertyAktif = true;
+            bool _newQueryYapilacakMi = true;
+
+            YetkiYonetimi.IsAkisiBasladiMi = false;
+
+            if (this.ScreenMode != ScreenModes.Workflow)
+            {
+                ItfaParametre = new LDTOItfaParametre() { IlkKezYukleniyor = true };
+
+                #region KrediIsAkisi BagliBolge
+
+                DTOBranch bagliBolge = bulBagliOlduguBolge(UserInformation.TransactionBranchCode);
+                if (bagliBolge != null)
+                {
+                    KrediIsAkisi.BagliBolge = bagliBolge.Name;
+                    FisEkBilgi.BagliBolge = bagliBolge.Name;
+                }
+
+                #endregion
+
+                YetkiYonetimi = new YetkiYonetimiUI();
+                initializeScreen();
+
+                if (this.ScreenParameters != null && this.ScreenParameters.Items != null && this.ScreenParameters.Items.Count > 0)
+                {
+                    if (this.ScreenParameters.Items.Keys.Contains("DTOEximBankKrediSecilen"))
+                    {
+                        DTOEximBankKredi gelenEximBankKredi = this.ScreenParameters.Items["DTOEximBankKrediSecilen"] as DTOEximBankKredi;
+                        EximFirmaKodu = gelenEximBankKredi.EximFirmaKodu;
+                        MusteriNo = gelenEximBankKredi.MusteriNo;
+                        TaksitliHesap.KrediHesapNo = gelenEximBankKredi.KrediHesapNo;
+                        KrediHesapNo = gelenEximBankKredi.KrediHesapNo;
+
+                        if (this.ScreenParameters.Items.Keys.Contains("TahsilatEkranindanMi"))
+                        {
+                            _tahsilatEkranindanMi = true;
+                            EximReferansKoduEnabled = AccessModes.NonEditable;
+
+                            this.IsReadVisible = false;
+                            this.IsClearVisible = false;
+                            this.IsNewQueryVisible = false;
+                        }
+
+                        EkranKapanisKontrol = this.ScreenParameters.Items["EkranKapanisKontrol"] as DTOEximBankKredi;
+
+                        //todo
+                        ReadCommand.Execute(null);
+
+                        long? gelenEximReferansKodu = this.ScreenParameters.Items["EximReferansKodu"] as long?;
+                        string gelenDovizCinsi = this.ScreenParameters.Items["DovizCinsi"] as string;
+
+                        DTOEximBankKredi eximBankKredi = new DTOEximBankKredi();
+                        eximBankKredi.EximReferansKodu = Convert.ToInt64(gelenEximReferansKodu);
+                        eximBankKredi.EximFirmaKodu = EximFirmaKodu;
+                        eximBankKredi.DovizCinsi = gelenDovizCinsi;
+                        eximBankKredi.Id = gelenEximBankKredi.Id;
+                        eximBankKredi.MusteriNo = gelenEximBankKredi.MusteriNo;
+                        eximBankKredi.MusteriAdi = gelenEximBankKredi.MusteriAdi;
+
+                        SelectedEximBankReferansi = eximBankKredi;
+
+
+                        //Session.Customer.CustomerNo = this.ScreenParameters.Items["CustomerNo"] as string;
+
+
+                        //this.ScreenParameters = null;
+                        _newQueryYapilacakMi = false;
+
+                        //TODO
+
+                        KrediHesapNo = TaksitliHesap.KrediHesapNo;
+                    }
+                }
+
+            }
+            else
+            {
+                #region İş Akışında ise
+
+                if (SelectedEximBankReferansi != null)
+                    EximFirmaKodu = SelectedEximBankReferansi.EximFirmaKodu;
+
+                YetkiYonetimi.IsAkisiBasladiMi = true;
+
+                KrediIsAkisi.SicilYetkisi = KrediSicilYetkileri.None;
+                //Sicil seviyesini bulan fonksiyon  Şube Bölge GenelMüdürlük
+                KrediIsAkisi.SicilYetkisi = getirYetkiSeviyesiTagIle(this.WorkflowInformation.WorkflowActivity.Tag);
+
+                KrediIsAkisi.SicilSeviyesi = KrediSicilSeviyeleri.None;
+                // Birinci Sicil Mi İkinci Sicil Mi
+                KrediIsAkisi.SicilSeviyesi = birimBirinciSicilMiIkinciSicilMi(this.WorkflowInformation.WorkflowActivity.Tag);
+
+                if (LstYetkiNedenKontrol != null && LstYetkiNedenKontrol.Count > 0)
+                {
+                    List<DTOYetkiNedenKontrol> lstYetkiNedenKontrol = new List<DTOYetkiNedenKontrol>(LstYetkiNedenKontrol);
+
+                    #region Onaylanmamış Yetkiler
+
+                    if ((KrediIsAkisi.SicilYetkisi == KrediSicilYetkileri.GenelMudurluk || KrediIsAkisi.SicilYetkisi == KrediSicilYetkileri.Bolge))
+                    {
+                        KrediNedenKoduIlgiliBirimleri birim = birimPazarlamaMiTahsisMi(this.WorkflowInformation.WorkflowActivity.Tag);
+
+                        if (lstYetkiNedenKontrol.ToList().Exists(x => (KrediNedenKoduIlgiliBirimleri)x.NedenKoduIlgiliBirim == birim && !x.Durum))
+                        {
+                            List<KrediYetkiNedenKodlari> lstDurumuOnaylanmamisYetki = new List<KrediYetkiNedenKodlari>();
+                            foreach (DTOYetkiNedenKontrol yetkiNedenKontrol in lstYetkiNedenKontrol.Where(x => (KrediNedenKoduIlgiliBirimleri)x.NedenKoduIlgiliBirim == birim && !x.Durum))
+                            {
+                                lstDurumuOnaylanmamisYetki.Add((KrediYetkiNedenKodlari)yetkiNedenKontrol.KrediYetkiNedenKodu);
+                            };
+                            LstDurumuOnaylanmamisYetki = new List<KrediYetkiNedenKodlari>(lstDurumuOnaylanmamisYetki);
+                        }
+                    }
+
+                    #endregion
+
+                    #region Oran ve Masraf değiştirip değiştiremeyeceginin karar verilmesi
+
+                    List<DTOOranYetki> lstOranYetki = LstOranYetki.ToList();
+
+                    bool isEditable;
+
+                    DTOOranYetki oranYetkiKomisyon = lstOranYetki.Find(s => s.OranYetkiTipi == KrediOranTurleri.KomisyonOrani);
+                    if (oranYetkiKomisyon != null)
+                    {
+                        isEditable = false;
+                        //Bug 180063:Faiz Oranı yetkisi talep edilmediği halde GM de faiz oranının değiştirilebilmesi hatası hk
+                        if (lstYetkiNedenKontrol.Exists(s => (KrediYetkiNedenKodlari)s.KrediYetkiNedenKodu == KrediYetkiNedenKodlari.KomisyonOraniGuncelleme))
+                            //Bug 201190:taksitli kullandırım-46.madde // Bölge yetkisinde onaylanmış olan operasyon masrafı, GM Pazarlama 1. Sicile geldiğinde içinde değiştirilememeli
+                            if (KrediIsAkisi.SicilYetkisi == KrediSicilYetkileri.Bolge || oranYetkiKomisyon.YetkiBirimi == KrediIsAkisi.SicilYetkisi)//Oranı sadece ilgili yetki birimi değiştirebilir
+                                isEditable = true;
+
+                        oranYetkiKomisyon.IsEditable = isEditable;
+                    }
+
+                    //LstOranYetki = new ObservableCollection<DTOOranYetki>(lstOranYetki);
+
+                    #endregion
+                }
+
+                _mevcutKomisyonOraniDegisecek = true;
+                MevcutKomisyonOrani = MevcutItfa[MevcutItfa.Count - 1].KomisyonOrani;
+                _mevcutKomisyonOraniDegisecek = false;
+
+                KrediHesapVisible = Visibility.Visible;
+                KrediHesapAramaTurleri = KrediHesapBileseniAramaTurleri.MusteriIleArama;
+                KrediHesapTetikle = false;
+                KrediHesapTetikle = true;
+                
+                #endregion
+            }
+
+            if (ScreenMode != ScreenModes.Workflow && this.ScreenParameters != null && _newQueryYapilacakMi == true)
+                NewQueryCommand.Execute(null);
+
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <returns></returns>
+        public override bool BeforeRead()
+        {
+            RequestMessage request = new RequestMessage();
+            ResponseMessage response = new ResponseMessage();
+            DTOEximBankKredi dtoExim = new DTOEximBankKredi() { EximFirmaKodu = EximFirmaKodu };
+            request.Add(dtoExim);
+
+            using (ISTaksitliTicari proxy = Service.CreateProxy<ISTaksitliTicari>(this))
+            {
+                response = proxy.GetirEximBankKrediGuncellemeIcin(request);
+                //response = proxy.GetirEximKrediByFirmaKodu(request);
+            }
+
+            if (!response.OperationResult.IsSucceeded)
+            {
+                Messages.ShowInformationMessage(response.OperationResult.Items[0].MessageCode, response.OperationResult.Items[0].MessageArgs);
+                return false;
+            }
+            else
+            {
+                EximBankReferanslari = new List<DTOEximBankKredi>(response.Get<List<DTOEximBankKredi>>());
+                List<DTOTicariTaksitliHesap> ticariKrediHesaplar = response.Get<List<DTOTicariTaksitliHesap>>();
+                List<LDTOTicariTaksitliKrediBilgiIfa> itfaHesaplari = response.Get<List<LDTOTicariTaksitliKrediBilgiIfa>>();
+
+                _dicTicariHesaplar = new Dictionary<string, List<DTOTicariTaksitliHesap>>();
+                _dicItfaHesaplar = new Dictionary<string, List<LDTOTicariTaksitliKrediBilgiIfa>>();
+
+                EximBankReferanslari.ForEach(x => _dicTicariHesaplar.Add(x.EximReferansKodu + x.DovizCinsi + x.MusteriNo, ticariKrediHesaplar.Where(z => z.DisDestekBasvuruNo == x.EximReferansKodu && z.DovizCinsi == x.DovizCinsi && z.MusteriNo == x.MusteriNo).ToList()));
+
+                foreach (var pair in _dicTicariHesaplar)
+                {
+                    if (pair.Value.Count != 0)
+                        _dicItfaHesaplar.Add(pair.Key, itfaHesaplari.Where(x => x.KrediHesapNo == pair.Value[0].KrediHesapNo).Where(x => x.DurumKodu == 1).ToList());
+                }
+
+                return true;
+            }
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <returns></returns>
+        public override bool Read()
+        {
+
+            //return true;
+            return base.Read();
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <returns></returns>
+        public override void AfterRead()
+        {
+            HesaplaButonunaBasildi = false;
+
+            base.AfterRead();
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <returns></returns>
+        public override bool BeforeApprove()
+        {
+            return base.BeforeApprove();
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <returns></returns>
+        public override bool Approve()
+        {
+            return base.Approve();
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public override void AfterApprove()
+        {
+            base.AfterApprove();
+        }
+
+        public override bool NewQuery()
+        {
+            EximFirmaKodu = 0;
+            EximBankReferanslari = new List<DTOEximBankKredi>();
+            SelectedEximBankReferansi.DovizCinsi = "";
+
+            TaksitliHesap.KrediHesapNo = 0;
+            TaksitliHesap.MusteriNo = "";
+
+            MusteriNo = "";
+            MusteriAdi = "";
+
+            TaksitliHesap = new DTOTicariTaksitliHesap();
+
+            //KrediHesapTemizle = true;
+            SelectedDtoKrediHesap = new LDTOKrediHesap();
+
+            initializeScreen();
+
+            //Clear();
+
+            return base.NewQuery();
+        }
+
+        /// <summary>
+        /// Ekranın temizlenmesi 
+        /// </summary>
+        public override void AfterClear()
+        {
+            if (this.ScreenMode != ScreenModes.Workflow)
+            {
+                EximFirmaKodu = 0; //KEY Alan olduğu için burada olması gerekiyor. Initialize'da sıfırlanırsa "Yeni Sorgu" denildiğinde ekranda BIND olduğu alan temizlenmediği için yanıltıcı oluyor.
+            }
+
+
+            initializeScreen();
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public void AfterNewListQuery()
+        {
+            initializeScreen();
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <returns></returns>
+        public override bool Close()
+        {
+
+            if (_tahsilatEkranindanMi == true)
+            {
+                DTOEximBankKredi ekranKontrol = this.ScreenParameters.Items["EkranKapanisKontrol"] as DTOEximBankKredi;
+                ekranKontrol.GuncellemeEkraniKapandiMi = true;
+
+            }
+
+            //SessionController.CloseActiveSession();
+
+            return base.Close();
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <returns></returns>
+        public override bool BeforeClose()
+        {
+            if (SecilenOranYetki != null)
+                SecilenOranYetki.PropertyChanged -= oranYetki_PropertyChanged;
+
+            return true;
+        }
+
+        public override bool BeforeUpdate()
+        {
+
+            this.Request.Clear();
+            ResponseMessage response;
+
+            DTOTicariTaksitliHesap dtoHesap = new DTOTicariTaksitliHesap();
+            dtoHesap.DisDestekBasvuruNo = SelectedEximBankReferansi.EximReferansKodu;
+            dtoHesap.MusteriNo = MusteriNo;
+            dtoHesap.DovizCinsi = SelectedEximBankReferansi.DovizCinsi;
+            this.Request.Add(dtoHesap);
+            using (ISTaksitliTicari proxy = Service.CreateProxy<ISTaksitliTicari>(this))
+            {
+                response = proxy.GetirEximHareketByOdenecek(this.Request);
+            }
+            List<DTOEximBankOdemeHareket> lstEximBankOdemeHareket = response.Get<List<DTOEximBankOdemeHareket>>();
+            if (lstEximBankOdemeHareket != null && lstEximBankOdemeHareket.Count != 0)
+            {
+                DTOEximBankOdemeHareket eximBankOdemeHareket = lstEximBankOdemeHareket[0];
+                if (eximBankOdemeHareket == null)
+                    _geriOdemeYapildiMi = false;
+                else
+                {
+                    if (_subeMiBirimMi.Equals("S"))
+                        _geriOdemeYapildiMi = false;
+                    else
+                        _geriOdemeYapildiMi = (eximBankOdemeHareket.Tahsilat == YesNo.Yes) ? true : false;
+                }
+                if (_geriOdemeYapildiMi == true)
+                {
+                    //hata
+                    Messages.ShowInformationMessage(Peak.Common.Krediler.TaksitliTicari.Constants.Mesaj.KALAN_ANAPARA_FARKI_BILGISI_X, new string[] { "Geri Ödemesi olan taksit güncellenemez." });
+                }
+            }
+            else
+            {
+                _geriOdemeYapildiMi = false;
+                if (!HesaplaButonunaBasildi)
+                {
+                    Messages.ShowInformationMessage(Peak.Common.Krediler.TaksitliTicari.Constants.Mesaj.KALAN_ANAPARA_FARKI_BILGISI_X, new string[] { "Hesaplama yapılmadan güncelleme yapılamaz" });
+                    return false;
+                }
+                else
+                {
+
+                    SecilenItfa.PropertyChanged += secilenItfa_PropertyChanged;
+
+
+                    //STaksitliTicari.TicariTaksitliHesap.g.cs Hesaptan FisBilgi.FaizReeskontTutari doldur
+                    this.Request.Clear();
+                    ResponseMessage response2;
+
+                    TicariTaksitliHesap.KrediHesapNo = TaksitliHesap.KrediHesapNo;
+
+                    this.Request.Add(TicariTaksitliHesap);
+                    using (ISTaksitliTicari proxy = Service.CreateProxy<ISTaksitliTicari>(this))
+                    {
+                        response2 = proxy.OkuTaksitliHesap(this.Request);
+                    }
+                    TicariTaksitliHesap = response2.Get<DTOTicariTaksitliHesap>();
+
+
+                    lstTicariTaksitliKrediBilgiIfa = new List<LDTOTicariTaksitliKrediBilgiIfa>();
+                    lstGuncellenecekTicariTaksitliKrediBilgiIfa = new List<LDTOTicariTaksitliKrediBilgiIfa>();
+
+                    foreach (LDTOTicariTaksitliKrediBilgiIfa ticariTaksitliKrediBilgiItfa in YeniItfa)//griddeki tüm kayıtlar
+                    {
+                        lstTicariTaksitliKrediBilgiIfa.Add(ticariTaksitliKrediBilgiItfa);
+                    }
+
+
+
+                    //Yunus tan alınan hesaplama
+                    if (lstTicariTaksitliKrediBilgiIfa != null && lstTicariTaksitliKrediBilgiIfa.Count > 0)
+                    {
+
+
+                        try
+                        {
+
+
+                            bool valorsuzluk = true;
+                            int? taksitOdemeGunu = null;
+                            decimal? komisyonOrani2 = YeniItfa[YeniItfa.Count - 1].KomisyonOrani;//todo
+                            KrediZamanOlculeri komisyonOranTuru = KrediZamanOlculeri.Ay;
+                            decimal? bSMVOrani = null;
+                            decimal? kKDFOrani = null;
+                            decimal? esnekTaksitTutari = null;
+
+                            LDTOTicariTaksitliKrediBilgiIfa oncekiTicariTaksitliKrediBilgiIfa = lstTicariTaksitliKrediBilgiIfa[0];//ilk kayıt
+
+                            decimal ilkAnapara = lstTicariTaksitliKrediBilgiIfa[0].KalanAnapara;
+                            decimal yeniAnapara = 0;
+
+                            int taksitNo = oncekiTicariTaksitliKrediBilgiIfa.TaksitNo;
+
+                            for (int i = taksitNo; i < lstTicariTaksitliKrediBilgiIfa.Count; i++)
+                            {
+                                yeniAnapara += lstTicariTaksitliKrediBilgiIfa[i].TaksitAnaparaTutari;
+
+                                if (lstTicariTaksitliKrediBilgiIfa[i].TaksitTarihi >= Calendar.Calendar.GetToday())
+                                {
+                                    System.Diagnostics.Debug.WriteLine("lstTicariTaksitliKrediBilgiIfa[i] ID=" + lstTicariTaksitliKrediBilgiIfa[i].Id);
+
+                                    LDTOTicariTaksitliKrediBilgiIfa ticariTaksitliKrediBilgiIfa = lstTicariTaksitliKrediBilgiIfa[i];
+
+                                    esnekTaksitTutari = null;
+
+
+                                    int ay = 0;
+                                    int gun = 0;
+
+                                    if (i != lstTicariTaksitliKrediBilgiIfa.Count - 1)
+                                        gun = (lstTicariTaksitliKrediBilgiIfa[i + 1].TaksitTarihi - lstTicariTaksitliKrediBilgiIfa[i].TaksitTarihi).Days;
+                                    else
+                                        gun = 0;
+
+                                    Peak.UI.Windows.Library.Utility.ItfaFonksiyonlar.Instance.HesaplaAyGun(KrediFaizTurleri.BasitFaizliKredi, Convert.ToInt32(taksitOdemeGunu), oncekiTicariTaksitliKrediBilgiIfa.TaksitTarihi, ticariTaksitliKrediBilgiIfa.TaksitTarihi, out ay, out gun);
+                                    int valorGun = valorsuzluk == true ? 0 : 1;
+                                    decimal komisyonOrani = Math.Round(Peak.UI.Windows.Library.Utility.ItfaFonksiyonlar.Instance.GetirYillikOran(Convert.ToDecimal(komisyonOrani2), komisyonOranTuru), 2);
+                                    //decimal komisyon = Peak.UI.Windows.Library.Utility.ItfaFonksiyonlar.Instance.HesaplaTutar(KrediFaizTurleri.BasitFaizliKredi, komisyonOrani, valorGun, ay, gun, ticariTaksitliKrediBilgiIfa.KalanAnapara);
+                                    //decimal komisyonBSMV = Peak.UI.Windows.Library.Utility.ItfaFonksiyonlar.Instance.HesaplaKomisyonBSMV(Convert.ToDecimal(bSMVOrani), 1, komisyon);
+                                    //decimal komisyonKKDF = Peak.UI.Windows.Library.Utility.ItfaFonksiyonlar.Instance.HesaplaKomisyonKKDF(Convert.ToDecimal(kKDFOrani), 1, komisyon);
+                                    //esnekTaksitTutari = (decimal?)(ticariTaksitliKrediBilgiIfa.KalanAnapara + komisyon + komisyonBSMV + komisyonKKDF);
+
+                                    oncekiTicariTaksitliKrediBilgiIfa = ticariTaksitliKrediBilgiIfa;
+
+                                    SecilenItfa.PropertyChanged -= secilenItfa_PropertyChanged;//Loopa girmemesi için
+
+
+                                    //ticariTaksitliKrediBilgiIfa.TaksitKomisyonBsmvTutari = komisyonBSMV;
+                                    //ticariTaksitliKrediBilgiIfa.TaksitKomisyonKkdfTutari = komisyonKKDF;
+                                    ticariTaksitliKrediBilgiIfa.KrediHesapNo = (YeniItfa != null) ? YeniItfa[0].KrediHesapNo : 0;
+                                    //ticariTaksitliKrediBilgiIfa.KomisyonOrani = (SecilenOranYetki != null) ? SecilenOranYetki.UygulanacakOran : MevcutKomisyonOrani;
+                                    //ticariTaksitliKrediBilgiIfa.TaksitKomisyonTutari = komisyon; actionHesapla'da yapılıyor
+                                    if (ticariTaksitliKrediBilgiIfa.TaksitNo != 0)
+                                        ticariTaksitliKrediBilgiIfa.KalanAnapara = lstTicariTaksitliKrediBilgiIfa[i - 1].KalanAnapara - ticariTaksitliKrediBilgiIfa.TaksitAnaparaTutari;
+                                    else
+                                        ticariTaksitliKrediBilgiIfa.KalanAnapara = lstTicariTaksitliKrediBilgiIfa[0].KalanAnapara;
+
+
+
+                                    lstTicariTaksitliKrediBilgiIfa[i] = ticariTaksitliKrediBilgiIfa;
+
+                                    lstGuncellenecekTicariTaksitliKrediBilgiIfa.Add(ticariTaksitliKrediBilgiIfa);
+                                    System.Diagnostics.Debug.WriteLine("lstGuncellenecekTicariTaksitliKrediBilgiIfa" + lstGuncellenecekTicariTaksitliKrediBilgiIfa.Count);
+                                }
+                            }
+
+                            SecilenItfa.PropertyChanged -= secilenItfa_PropertyChanged;
+
+                            anaparaFarki = ilkAnapara - yeniAnapara;
+
+                            if (anaparaFarki != 0)
+                            {
+                                Messages.ShowInformationMessage(Peak.Common.Krediler.TaksitliTicari.Constants.Mesaj.KALAN_ANAPARA_FARKI_BILGISI_X, new string[] { "Yeni anapara, ilk anaparaya eşit değil. Fark : " + anaparaFarki });
+                                return false;
+                            }
+
+                            YeniItfa = new ObservableCollection<LDTOTicariTaksitliKrediBilgiIfa>(lstTicariTaksitliKrediBilgiIfa);
+                            MevcutKomisyonOrani = YeniItfa[YeniItfa.Count - 1].KomisyonOrani;
+
+
+                            SecilenItfa.PropertyChanged += secilenItfa_PropertyChanged;
+
+                        }
+
+                        catch (Peak.Common.BaseException be)
+                        {
+                            Messages.ShowWarningMessage(Peak.Common.Krediler.TaksitliTicari.Constants.Mesaj.HATA, be.ToString());
+                            //_hataYonetimi.EkleHata(new Hata() { HataTipi = Utility.Enums.HataTipleri.EximHatasi, HataAciklamasi = be.ToString() });
+
+                        }
+                        catch (Exception ex)
+                        {
+                            Messages.ShowWarningMessage(Peak.Common.Krediler.TaksitliTicari.Constants.Mesaj.HATA, ex.ToString());
+                            //_hataYonetimi.EkleHata(new Hata() { HataTipi = Utility.Enums.HataTipleri.EximHatasi, HataAciklamasi = ex.ToString() });
+
+                        }
+                    }
+
+
+                    if (lstGuncellenecekTicariTaksitliKrediBilgiIfa != null)
+                    {
+                        foreach (LDTOTicariTaksitliKrediBilgiIfa ticariTaksitliKrediBilgiIfa in lstGuncellenecekTicariTaksitliKrediBilgiIfa)
+                        {
+                            if (ticariTaksitliKrediBilgiIfa.TaksitTarihi >= Calendar.Calendar.GetToday())
+                            {
+                                ticariTaksitliKrediBilgiIfa.FaizOrani = FaizOrani;
+                                ticariTaksitliKrediBilgiIfa.KomisyonOrani = (SecilenOranYetki != null) ? SecilenOranYetki.UygulanacakOran : MevcutKomisyonOrani;
+                            }
+                        }
+                    }
+
+                }
+            }
+
+            if (ScreenMode != ScreenModes.Workflow)
+            {
+
+                _hataYonetimi.SilHata(Utility.Enums.HataTipleri.YetkiIlgiliBirimDoldurma);
+                try
+                {
+                    yetkiIlgiliBirimDoldur();
+                }
+                catch (BaseException be)
+                {
+                    Messages.ShowWarningMessage(Peak.Common.Krediler.TaksitliTicari.Constants.Mesaj.HATA, be.ToString());
+                    _hataYonetimi.EkleHata(new Hata() { HataTipi = Utility.Enums.HataTipleri.YetkiIlgiliBirimDoldurma, HataAciklamasi = be.ToString() });
+                }
+                catch (Exception ex)
+                {
+                    Messages.ShowWarningMessage(Peak.Common.Krediler.TaksitliTicari.Constants.Mesaj.HATA, ex.ToString());
+                    _hataYonetimi.EkleHata(new Hata() { HataTipi = Utility.Enums.HataTipleri.YetkiIlgiliBirimDoldurma, HataAciklamasi = ex.ToString() });
+                }
+            }
+
+            return true;
+        }
+
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <returns></returns>
+        public override bool Update()
+        {
+
+            //Degisen Itfalar
+            if (lstGuncellenecekTicariTaksitliKrediBilgiIfa != null)
+            {
+                foreach (LDTOTicariTaksitliKrediBilgiIfa ticariTaksitliKrediBilgiIfa in lstGuncellenecekTicariTaksitliKrediBilgiIfa)
+                {
+                    if (_yeniKomisyonOrani != MevcutKomisyonOrani)
+                        ticariTaksitliKrediBilgiIfa.KomisyonOrani = (SecilenOranYetki != null) ? SecilenOranYetki.UygulanacakOran : MevcutKomisyonOrani;
+                    else
+                        ticariTaksitliKrediBilgiIfa.KomisyonOrani = MevcutKomisyonOrani;
+
+                    ticariTaksitliKrediBilgiIfa.TaksitliKrediItfaId = YeniItfa[0].TaksitliKrediItfaId;
+                }
+            }
+
+            if (_geriOdemeYapildiMi == false)
+            {
+
+
+
+                ResponseMessage response;
+
+                //Degisen ItfaPlan'lar Okunur ve Pasif olarak güncellenir, yenileri insert edilir. EximBankOdemePlanı güncellenir. Hesap ve Oran ve ItfaPlan güncellenir. 
+                this.Request.Clear();
+
+
+                this.Request.Add("GuncellenecekItfa", lstGuncellenecekTicariTaksitliKrediBilgiIfa);
+                this.Request.Add("TumItfa", YeniItfa.ToList());
+
+                SelectedEximBankReferansi.MusteriAdi = MusteriAdi;
+                this.Request.Add("SecilenEximBankReferansi", SelectedEximBankReferansi);
+                this.Request.Add("SecilenOranYetki", SecilenOranYetki);
+                this.Request.Add("MevcutItfa", MevcutItfa.ToList());
+
+                this.Request.Add(LstIsAkisiYetkiNedenKontrol);
+                this.Request.Add(LstIsAkisiOranYetki);
+                this.Request.Add(KrediIsAkisi);
+                this.Request.Add(FisEkBilgi);
+
+                this.Request.Add(TaksitliHesap);
+                this.Request.Add(MusteriBilgisi);
+                this.Request.Add(YenidenYapilandir);
+
+                DTOAksama dtoAksama = new DTOAksama();
+                dtoAksama.VbMusteriNo = MusteriBilgisi.VbMusteriNo;
+                this.Request.Add(dtoAksama);
+
+                FisBilgi.TarimMi = false;
+                FisBilgi.FaizReeskontTutari = TicariTaksitliHesap.YilSonuKalanFaizReeskont;
+                this.Request.Add(FisBilgi);
+
+                this.Request.Add(IsAkisiBilgi);
+                this.Request.Add(UrunYetki);
+
+                this.Request.Add(EximBankReferanslari);
+
+                DTOEximBankOdemePlani dtoEximBankOdemePlani = new DTOEximBankOdemePlani();
+                dtoEximBankOdemePlani.YilSonundanKalanFaizTutari = YeniItfa[YeniItfa.Count - 1].TaksitFaizTutari - TicariTaksitliHesap.YilSonuKalanFaizReeskont;
+                this.Request.Add(dtoEximBankOdemePlani);
+
+                using (ISTaksitliTicari proxy = Service.CreateProxy<ISTaksitliTicari>(this))
+                {
+                    response = proxy.GuncelleEximItfaPlan(this.Request);
+                }
+
+
+                return true;
+            }
+            else
+                return false;
+
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <returns></returns>
+        public override bool Insert()
+        {
+            return base.Insert();
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <returns></returns>
+        public override void AfterUpdate()
+        {
+            if (_tahsilatEkranindanMi == true)
+                this.CloseCommand.Execute(this);
+
+            //base.AfterUpdate();
+        }
+
+        /*
+        public override bool Delete()
+        {
+            return base.Delete();
+        }
+        */
+
+        public override void ScreenButtonExecute(string buttonName)
+        {
+            ScreenMessage screenMessage = new ScreenMessage();
+
+            switch (buttonName)
+            {
+                case "sbtHesapla":
+                    actionHesapla(new Object());
+                    break;
+
+                default:
+                    break;
+            }
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="oranYetki"></param>
+        /// <returns></returns>
+        private bool degisebilirMiUygulanacakOran(DTOOranYetki oranYetki)
+        {
+            if (oranYetki == null)
+                return false;
+
+            if (ScreenMode == ScreenModes.Workflow)
+            {
+                DTOOranYetki oranYetkiEskiOran = LstOranYetkiSube.Find(s => s.OranYetkiTipi == oranYetki.OranYetkiTipi);
+                if (oranYetkiEskiOran != null)
+                {
+                    if (oranYetki.UygulanacakOran < oranYetkiEskiOran.UygulanacakOran)
+                    {
+                        if (KrediIsAkisi.SicilYetkisi != KrediSicilYetkileri.Sube)
+                        {
+                            Messages.ShowWarningMessage(Mesaj.TALEP_EDILEN_DEGERIN_ALTINDA_BIR_DEGER_TALEP_EDEMEZSINIZ, new string[] { oranYetki.OranYetkiTipi.ToString() });
+                            return false;
+                        }
+
+                        oranYetki.UygulanacakOran = oranYetkiEskiOran.UygulanacakOran;
+                    }
+                }
+            }
+
+
+            return true;
+        }
+
+
+
+        #endregion Public Methods
+    }
+}

@@ -1,0 +1,668 @@
+﻿<sc:UItemEditScreen ScreenCode="TKRTEXMGUN"  Caption="Exim Güncelleme"
+                    ScreenMode="Read"
+                    x:Class="Peak.UI.Windows.Screen.TKRTEXMGUN"          
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:sc="clr-namespace:Peak.UI.Windows.Screens;assembly=Peak.UI.Windows"
+		xmlns:cc="http://www.vakifbank.com/windows/compositecontrols" 
+        xmlns:uc="clr-namespace:Peak.UI.Windows.UserControls;assembly=Peak.UI.Windows"		
+        xmlns:ucc="http://www.vakifbank.com/windows/commands"
+        xmlns:ccs="http://www.vakifbank.com/windows/compositecontrols"
+                    xmlns:ucs="http://www.vakifbank.com/windows/usercontrols"
+                     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+                     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+xmlns:converters="http://www.vakifbank.com/windows/converters"
+        mc:Ignorable="d" 
+        d:DesignWidth="640" d:DesignHeight="480">
+    <sc:UItemEditScreen.ScreenButtons>
+        <sc:ScreenButtonCollection>
+            <sc:ScreenButton Caption="Hesapla" Name="sbtHesapla" ToolTip="Hesapla" />
+        </sc:ScreenButtonCollection>
+    </sc:UItemEditScreen.ScreenButtons>
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+        <uc:UExpander IsExpanded="True" Caption="Hesap Güncelleme Giriş">
+            <!-- Seçim Kriterleri -->
+            <!-- Üç satır ve iki kolondan oluşan örnek bir grid yaratılmıştır. İhtiy
+            a göre değiştirilir. -->
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="380" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition />
+                    <RowDefinition />
+                    <RowDefinition />
+                    <RowDefinition />
+                </Grid.RowDefinitions>
+
+                <uc:UNumberBox  Value="{Binding Path=EximFirmaKodu, Mode=TwoWay}" 
+                                Caption="Firma Kodu"
+                                Grid.Row="0" 
+                                HorizontalAlignment="Stretch"
+                              IsRequiredForRead="True"
+                              BehaviourType="Key"/>
+
+                <uc:UComboBox   Grid.Row="1"
+                                HorizontalAlignment="Stretch"
+                                Caption="Referans Kodu"  
+                                ValueMemberPath="EximReferansKodu"
+                                DisplayMemberPath="EximReferansKodu"
+                                ItemsSource="{Binding EximBankReferanslari, Mode=TwoWay}" 
+                                SelectedItem="{Binding SelectedEximBankReferansi, Mode=TwoWay}"
+                                ToolTipText="İtfa Bilgileri Güncellenecek EximBank Başvuru Referans numarasını seçiniz."
+                                AccessMode="{Binding EximReferansKoduEnabled, Mode=TwoWay}"
+                              BehaviourType="KeyAndEntry"
+                              >
+                    
+                    <uc:UComboBox.VisibleColumns>
+                        <uc:UComboColumn ColumnName="EximReferansKodu" Header="Kredi Referansı"/>
+                        <uc:UComboColumn ColumnName="DovizCinsi" Header="Döviz Cinsi"/>
+                    </uc:UComboBox.VisibleColumns>
+                </uc:UComboBox>
+                <uc:UComboBox   ParameterGroupCode="APPCurrency"
+                                Grid.Row="2"
+                                IsRequiredForSave="True"
+                                Caption="Döviz Cinsi" 
+                                SelectedValue="{Binding Path=SelectedEximBankReferansi.DovizCinsi, Mode=TwoWay}" 
+                                DisplayMemberPath="Description"
+                                IsReadOnly="True"
+                                IsEditable="False"
+                                />
+
+                <cc:CKrediHesap  Caption="Kredi Hesap No" 
+                                 SeciliDtoKrediHesap="{Binding Path=SelectedDtoKrediHesap, Mode=TwoWay}"
+                                 Grid.Row="3"
+                                 MusteriNo="{Binding Path=MusteriNo, Mode=TwoWay}"
+                                 KrediHesapNo="{Binding Path=TaksitliHesap.KrediHesapNo, Mode=TwoWay}"
+                                 KrediHesapAramaTuru="MusteriIleArama"
+                                 KrediTuru="TaksitliTicari"
+                                 AramayiDisaridanTetikle="{Binding KrediHesapTetikle, Mode=TwoWay}"
+                                 BehaviourType="None"
+                                 AraButonuGorunurluk="Collapsed"
+                                 IsEditable="False"
+                                 IsEnabled="False"
+                                 ComboBoxEnabled="True" 
+                                 DetayButonuEnabled="True"
+                                 DetayButonuGorunurluk="Visible"
+                                 Width="360"
+                                 IsRequiredForRead="False"
+                                 IsRequiredForSave="True"    
+                                 AraButonuEnabled="True"
+                                  BilgileriMusteriOturumundanAl="False" 
+                                  IlkKayitSeciliMi="True"
+                                 UrunKodu="55500360"
+                                 Visibility="{Binding KrediHesapVisible, Mode=TwoWay}"
+                                 />
+                                
+
+
+                <ucs:UTextBox Caption="Müşteri Adı"
+                              Grid.Row="0"
+                              Text="{Binding Path=MusteriAdi, Mode=TwoWay}"
+                              BehaviourType="None"
+                              IsEnabled="False"
+                              Grid.Column="1"
+                               Width="380"/>
+                <ucs:UTextBox Caption="Müşteri No"
+                              Text="{Binding Path=MusteriNo, Mode=TwoWay}"
+                              BehaviourType="None"
+                              IsEnabled="False"
+                              Grid.Row="1"
+                              Grid.Column="1"
+                               Width="380"/>
+
+                <!--
+                <uc:UButton Caption="Geri Ödeme Ekranı"  Grid.Column="1"
+                                                    Name="btnAcGeriOdemeEkrani"
+                                Command="{Binding Path=AcGeriOdemeEkraniCommand}"
+                                                    HorizontalAlignment="Right" />
+                -->
+                <!--<uc:UTextBox IsRequiredForRead="True" BehaviourType="Key" Grid.Row="0" ></uc:UTextBox>
+                <uc:UTextBox IsRequiredForRead="True" BehaviourType="Key" Grid.Row="1" ></uc:UTextBox>
+                <uc:UNumberBox IsRequiredForRead="True" BehaviourType="Key" Grid.Column="1" ></uc:UNumberBox>
+                <uc:UCheckBox IsRequiredForRead="True" BehaviourType="Key" Grid.Column="1" Grid.Row="1" ></uc:UCheckBox>-->
+            </Grid>
+        </uc:UExpander>
+
+        <uc:UExpander IsExpanded="True" Caption="Yeni Kayıt" Grid.Row="1" IsEnabled="True" Visibility="{Binding Path=YeniKayitEkleyebilirMi, Mode=TwoWay}">
+
+            <Grid IsEnabled="{Binding Path=EklenenItfaAktifMi, Mode=TwoWay}">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Name="col1"
+                                                          Width="240" />
+                    <ColumnDefinition Name="col2"
+                                                          Width="10" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+                <StackPanel Width="240" >
+
+                    <uc:UDatePicker Caption="TaksitTarihi"
+                                                        Name="datTaksitTarihi"
+                                                        Width="220"
+                                                        Value="{Binding Path=EklenenItfa.TaksitTarihi, Mode=TwoWay}" />
+                    <uc:UNumberBox Caption="Ana Para Tutarı"
+                                                       HorizontalAlignment="Left"
+                                                       Width="220"
+                                                       MinValue="0"
+                                                       Value="{Binding Path=EklenenItfa.TaksitAnaparaTutari, Mode=TwoWay}" />
+                  
+                    <uc:UButton Caption="Ekle"  
+                                                    Name="btnEkleItfa"
+                                Command="{Binding Path=EkleItfaCommand}"
+                                                    HorizontalAlignment="Right" />
+                </StackPanel>
+            </Grid>
+        </uc:UExpander>
+
+        <uc:UExpander IsExpanded="True" Caption="Kayıt Alanları" Grid.Row="2" IsEnabled="{Binding Path=EnableExpanderKayit}">
+
+
+
+            
+
+
+
+
+
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+
+                <uc:UTab  Name="tabKontrol"
+                          FontWeight="Medium"
+                          SelectedIndex="{Binding Path=TABIndex}">
+
+                    <uc:UTabItem Header="Yeni İtfa"  
+                                 x:Name="tbiYeniItfa" >
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="*" />
+                                <RowDefinition Height="*" />
+                                <RowDefinition Height="*" />
+                            </Grid.RowDefinitions>
+
+                               <uc:UDataGrid IsCaptionVisible="False"
+                               BehaviourType="ItemSource"
+                               IsGroupingAllowed="False"
+                               IsEditingAllowed="True"
+                               EditMode="{Binding Path=SubeBirimItfaEditMode, Mode= TwoWay}"
+                               ItemsSource="{Binding Path=YeniItfa, Mode= TwoWay}"
+                               Height="Auto"
+                               VerticalAlignment="Stretch" 
+                               SelectedItem="{Binding Path=SecilenItfa, Mode= TwoWay}"
+                                 >
+
+                                <uc:UDataGrid.Expressions>
+                                    <uc:RowExpression ColumnName="TaksitNo" 
+                                                                  Value="{Binding Path=OdenecekTaksitNo}"  
+                                                                  Condition="Lower"  
+                                                                  MatchedRowColor="Red"
+                                                                  MatchedRowEnabled="False">
+                                    </uc:RowExpression>
+                                </uc:UDataGrid.Expressions>
+
+                                <uc:UDataGrid.Columns>
+                                    <uc:UDataGridColumnCollection>
+                                        <uc:UDataGridColumn ColumnName="TaksitNo"
+                                                 Header="Taksit No"
+                                                 IsAllowBestFit="True"
+                                                 IsEditingAllowed="False" />
+
+                                        <uc:UDataGridColumn IsEditingAllowed="{Binding Path=SubeBirimAktifMi, Mode=OneWay}"
+                                                            IsVisible="{Binding Path=TaksitTarihi, Mode=TwoWay}"
+                                                            ColumnName="TaksitTarihi"
+                                                            Header="Taksit Tarihi"
+                                                            ColumnFormat="ddSepMMSepyyyy">
+                                            <uc:UDataGridColumn.EditControl>
+                                                <uc:UDatePicker IsRequiredForSave="True"/>
+                                            </uc:UDataGridColumn.EditControl>
+                                        </uc:UDataGridColumn>
+                                        
+                                     
+                                     
+                                        
+
+                                        <!--ValidDays="{Binding Path=RowData.Row.ValidDays}"-->
+                                        <!--IsClearButtonVisible="True"-->
+
+                                        <uc:UDataGridColumn ColumnName="TaksitAnaparaTutari"
+                                                 Header="Ana Para Tutarı"
+                                                 ColumnFormat="Number2"
+                                                 IsAllowBestFit="True"
+                                                 IsEditingAllowed="{Binding Path=SubeBirimAktifMi, Mode=TwoWay}"
+                                                    IsEnabled="{Binding Path=SubeBirimAktifMi, Mode=TwoWay}" >
+                                            <ucs:UDataGridColumn.EditControl>
+                                                <ucs:UNumberBox MaxDigit="18" Precision="2" MinValue="0" IsCaptionVisible="False" />
+                                            </ucs:UDataGridColumn.EditControl>
+                                        </uc:UDataGridColumn>
+
+                                        <uc:UDataGridColumn ColumnName="KalanAnapara"
+                                                 Header="Kalan Ana Para Tutarı"
+                                                 ColumnFormat="Number2"
+                                                 IsAllowBestFit="True"
+                                                 IsEditingAllowed="{Binding Path=SubeBirimAktifMi, Mode=TwoWay}"
+                                                 IsEnabled="{Binding Path=SubeBirimAktifMi, Mode=TwoWay}"      />
+
+                                        <uc:UDataGridColumn ColumnName="TaksitFaizTutari"
+                                                 Header="Faiz Tutarı"
+                                                 ColumnFormat="Number2"
+                                                 IsAllowBestFit="True"
+                                                 IsEditingAllowed="{Binding Path=SubeBirimAktifMi, Mode=TwoWay}"
+                                                IsEnabled="{Binding Path=SubeBirimAktifMi, Mode=TwoWay}">
+
+                                            <uc:UDataGridColumn.EditControl>
+                                                <uc:UNumberBox Precision="2">
+
+                                                </uc:UNumberBox>
+                                            </uc:UDataGridColumn.EditControl>
+                                        </uc:UDataGridColumn>
+
+                                        <uc:UDataGridColumn ColumnName="TaksitKomisyonTutari"
+                                                 Header="Komisyon Tutarı"
+                                                 ColumnFormat="Number2"
+                                                 IsAllowBestFit="True"
+                                                 IsEditingAllowed="False" />
+                                        <uc:UDataGridColumn ColumnName="KomisyonOrani"
+                                                 Header="Komisyon Oranı"
+                                                 ColumnFormat="Number2"
+                                                 IsAllowBestFit="True"
+                                                 IsEditingAllowed="False"/>
+                                        <uc:UDataGridColumn ColumnName="FaizOrani"
+                                                 Header="Faiz Oranı"
+                                                 ColumnFormat="Number5"
+                                                 IsAllowBestFit="True"
+                                                 IsEditingAllowed="False" />
+                                        <uc:UDataGridColumn ColumnName="TaksitKomisyonBsmvTutari"
+                                                 Header="BSMV Tutarı"
+                                                 ColumnFormat="Number2"
+                                                 IsAllowBestFit="True"
+                                                 IsEditingAllowed="False"/>
+                                        <uc:UDataGridColumn ColumnName="BsmvOrani"
+                                                 Header="BSMV Oranı"
+                                                 ColumnFormat="Number2"
+                                                 IsAllowBestFit="True"
+                                                 IsEditingAllowed="False"/>
+
+                                    </uc:UDataGridColumnCollection>
+                                </uc:UDataGrid.Columns>
+                            </uc:UDataGrid>
+                            <!-- Faiz Komisyon Oranı -->
+                            <ucs:UExpander IsAddButtonVisible="False"
+                                           IsRemoveButtonVisible="False"
+                                           Caption="Faiz Komisyon Oranı"
+                                           IsCaptionVisible="True"
+                                           CaptionTextVerticalAlignment="Top"
+                                           AccessMode="Editable"
+                                           BehaviourType="None"
+                                           Visibility="Visible"
+                                           ManageChildren="False"
+                                           Foreground="#FF565151"
+                                           FontFamily="Segoe UI"
+                                           FontSize="11"
+                                           Grid.Row="2">
+
+
+
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="240" />
+                                        <ColumnDefinition Width="240" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                    </Grid.RowDefinitions>
+
+                                    <uc:UNumberBox  Value="{Binding Path=MevcutKomisyonOrani, Mode=TwoWay}" 
+                                    Caption="Mevcut Komisyon Oranı"
+                                    BehaviourType="None"
+                                    Grid.Row="0"
+                                    IsEnabled="False"
+                                    Precision="2"
+                                    />
+                                    
+                                    <uc:UNumberBox  Value="{Binding Path=FaizOrani, Mode=TwoWay}" 
+                                    Caption="Faiz Oranı"
+                                    BehaviourType="None"
+                                    Grid.Row="0"
+                                    Grid.Column="1"
+                                    IsEnabled="{Binding Path=SubeBirimAktifMi, Mode=TwoWay}"
+                                    Precision="5"
+                                    />
+                                    
+                                    <ucs:UCheckBox Caption="Komisyon Oranı Degiştir"
+                                                  IsChecked="{Binding Path=KomisyonOraniDegistir, Mode=TwoWay}" 
+                                                  Grid.Row="1"
+                                                  Grid.Column="0"
+                                                   IsEnabled="{Binding Path=KomisyonOraniDegistirebilirMi, Mode=TwoWay}"
+                                                   
+                                                  />
+                                    <!--
+                                    <ucs:UCheckBox Caption="Valörsüzlük Var Mı ?"
+                                                           DefaultValue="False"
+                                                           IsChecked="{Binding Path=ItfaParametre.Valorsuzluk, Mode=TwoWay}"
+                                                           Grid.Row="1"
+                                                           Grid.Column="1" />
+                                    -->
+                                    <ucs:UComboBox Caption="Faiz Tipi"
+                                                   BehaviourType="None"
+                                                   IsEnabled="{Binding Path=EkranEnable.FaizTipi, Mode=TwoWay}"
+                                                   ParameterGroupCode="KRDFaizTipi"
+                                                   SelectedValue="{Binding Path=TaksitliHesap.FaizTipi, Mode=TwoWay, Converter={converters:EnumConverter}}"
+                                                   Filter="{Binding Path=EkranFilter.FaizTipi, Mode=TwoWay}" 
+                                                   Grid.Row="2"/>
+                                    <!--
+                                    <ucs:UComboBox Caption="Spread Tipi"
+                                                   BehaviourType="None"
+                                                   IsEnabled="{Binding Path=EkranEnable.DegiskenFaizTipi, Mode=TwoWay}"
+                                                   Visibility="{Binding Path=EkranVisibility.DegiskenFaizTipi, Mode=TwoWay, Converter={converters:BoolVisibilityConverter}}"
+                                                   Filter="{Binding Path=EkranFilter.SpreadTipi, Mode=TwoWay}"
+                                                   ParameterGroupCode="KRDDegiskenFaizTipi"
+                                                   SelectedValue="{Binding Path=TaksitliHesap.DegiskenFaizTipi, Mode=TwoWay, Converter={converters:EnumConverter}}"
+                                                   Grid.Column="1" />
+
+                                    <ucs:UCheckBox Caption="Peşin Faiz"
+                                                   BehaviourType="Entry"
+                                                   AccessMode="{Binding Path=AccessModeIsAkisi, Mode=OneWay}"
+                                                   IsChecked="{Binding Path=TaksitliKullandirim.PesinFaizSeciliMi, Mode=TwoWay}"
+                                                   IsEnabled="{Binding Path=EkranEnable.PesinFaizSecilebilirMi, Mode=TwoWay}"
+                                                   Visibility="{Binding Path=EkranVisibility.PesinFaiz, Mode=TwoWay, Converter={converters:BoolVisibilityConverter}}"
+                                                   Grid.Column="2" />
+                                    -->
+
+                                    <!--
+                                    <ucs:UButton Caption="Fiyat Getir"
+                                                 Command="{Binding Path=FiyatGetirCommand, Mode=TwoWay}"
+                                                 Grid.Column="4"
+                                                  />
+                                    -->
+
+                                    <ucs:UDataGrid Name="dgrOranYetki"
+                                                   IsCaptionVisible="False"
+                                                   BehaviourType="ItemSource"
+                                                   IsGroupingAllowed="False"
+                                                   IsEditingAllowed="{Binding Path=KomisyonOraniDegistir, Mode=TwoWay}"
+                                                   EditMode="UpdateOnly"
+                                                   SortMemberPath="SiraNo"
+                                                   SortType="Numeric"
+                                                   Grid.Row="3"
+                                                   Grid.ColumnSpan="3"
+                                                   Visibility="{Binding Path=OranYetkiGridVisible, Mode=TwoWay}"
+                                                   SelectedItem="{Binding Path=SecilenOranYetki, Mode=TwoWay}"
+                                                   ItemsSource="{Binding Path=LstOranYetki, Mode=TwoWay}">
+                                        <ucs:UDataGrid.Columns>
+                                            <ucs:UDataGridColumnCollection>
+
+                                                <ucs:UDataGridColumn ColumnName="SiraNo"
+                                                                     IsVisible="False"
+                                                                     Header="Sıra No"
+                                                                     ColumnSortIndex="0"
+                                                                     ColumnSortMode="Value"
+                                                                     ColumnSortOrder="Ascending" />
+
+                                                <ucs:UDataGridColumn ColumnName="OranYetkiTipi"
+                                                                     IsEditingAllowed="False"
+                                                                     Header="Oran Tipi"
+                                                                     ParameterGroup="KRDOranTuru" />
+
+                                                <ucs:UDataGridColumn ColumnName="EndeksTipi"
+                                                                     IsEditingAllowed="False"
+                                                                     ParameterGroup="KRDLiborDovizCinsi"
+                                                                     IsVisible="{Binding Path=EkranIsVisible.EndeksTipi, Mode=OneWay}"
+                                                                     Header="Endeks Tipi" />
+
+                                                <ucs:UDataGridColumn ColumnName="TahakkukDonemi"
+                                                                     IsEditingAllowed="False"
+                                                                     IsVisible="{Binding Path=EkranIsVisible.EndeksTahakkukDonemi, Mode=OneWay}"
+                                                                     Header="Endeks Tahakkuk Dönemi" />
+
+                                                <ucs:UDataGridColumn ColumnName="FiyatlamaEndeksOran"
+                                                                     IsEditingAllowed="False"
+                                                                     ColumnFormat="Number2"
+                                                                     IsVisible="{Binding Path=EkranIsVisible.FiyatlamaEndeksOran, Mode=OneWay}"
+                                                                     Header="Endeks Oran" />
+
+                                                <ucs:UDataGridColumn ColumnName="SpreadOran"
+                                                                     IsVisible="{Binding Path=EkranIsVisible.SpreadOran, Mode=OneWay}"
+                                                                     Header="Spread Oran"
+                                                                     IsEditingAllowed="False"
+                                                                     ColumnFormat="Number2" />
+
+                                                <ucs:UDataGridColumn ColumnName="FiyatlamaOranVadeTipi"
+                                                                     ParameterGroup="KRDFiyatlamaOranVadeTipi"
+                                                                     Header="Oran Vade Tipi"
+                                                                     IsEditingAllowed="False" />
+
+                                                <ucs:UDataGridColumn ColumnName="SubeCariOran"
+                                                                     Header="Şube Cari Oran"
+                                                                     IsEditingAllowed="False"
+                                                                     ColumnFormat="Number2" />
+
+                                                <ucs:UDataGridColumn ColumnName="UygulanacakOran"
+                                                                     IsEditingAllowed="{Binding Path=KomisyonOraniDegistir, Mode=TwoWay}"
+                                                                     IsEnabled="{Binding Path=KomisyonOraniDegistir, Mode=TwoWay}"
+                                                                     Header="Uygulanacak Oran"
+                                                                     ColumnFormat="Number2"
+                                                                     >
+                                                    <ucs:UDataGridColumn.EditControl>
+                                                        <uc:UNumberBox Precision="2"
+                                                                        MinValue="0"
+                                                                        MaxValue="{Binding Path=RowData.Row.SubeUstOran, Mode=TwoWay}"
+                                                                        />
+
+                                                    </ucs:UDataGridColumn.EditControl>
+                                                </ucs:UDataGridColumn>
+
+                                                <ucs:UDataGridColumn ColumnName="SpreadArtiEndeksOrani"
+                                                                     Header="Endeks+Spread Oranı"
+                                                                     ColumnFormat="Number2"
+                                                                     IsEditingAllowed="False"
+                                                                     IsVisible="{Binding Path=EkranIsVisible.FaizOrani, Mode=OneWay}" />
+
+                                                <ucs:UDataGridColumn ColumnName="SubeAltOran"
+                                                                     Header="Şube Alt Oran"
+                                                                     IsVisible="{Binding Path=EkranIsVisible.SubeAltOrani, Mode=OneWay}"
+                                                                     IsEditingAllowed="False"
+                                                                     ColumnFormat="Number2" />
+
+                                                <ucs:UDataGridColumn ColumnName="BolgeOrani"
+                                                                     Header="Bölge Oranı"
+                                                                     IsVisible="{Binding Path=EkranIsVisible.BolgeOrani, Mode=OneWay}"
+                                                                     IsEditingAllowed="False"
+                                                                     ColumnFormat="Number2" />
+
+                                                <ucs:UDataGridColumn ColumnName="GenelMudurlukOrani"
+                                                                     Header="Genel Müdürlük Oran"
+                                                                     IsVisible="{Binding Path=EkranIsVisible.GenelMudurlukOrani, Mode=OneWay}"
+                                                                     IsEditingAllowed="False"
+                                                                     ColumnFormat="Number2" />
+
+                                                <ucs:UDataGridColumn ColumnName="BaslangicTarihi"
+                                                                     Header="Baslangıç Tarihi"
+                                                                     IsEditingAllowed="False"
+                                                                     ColumnFormat="ddSepMMSepyyyySpaceHH24mmss" />
+
+                                                <ucs:UDataGridColumn ColumnName="BitisTarihi"
+                                                                     Header="Bitis Tarihi"
+                                                                     IsEditingAllowed="False"
+                                                                     ColumnFormat="ddSepMMSepyyyySpaceHH24mmss" />
+
+                                            </ucs:UDataGridColumnCollection>
+                                        </ucs:UDataGrid.Columns>
+                                        <ucs:UDataGrid.Expressions>
+                                            <ucs:RowExpressionCollection>
+                                                <ucs:RowExpression ColumnName="IsEditable"
+                                                                   Condition="Equal"
+                                                                   Value="false"
+                                                                   MatchedRowEnabled="False"
+                                                                   MatchedRowColor="Gray" />
+                                            </ucs:RowExpressionCollection>
+                                        </ucs:UDataGrid.Expressions>
+                                    </ucs:UDataGrid>
+
+
+
+                                </Grid>
+                            </ucs:UExpander>
+                            <!-- END Faiz Komisyon Oranı -->
+                        </Grid>
+
+
+
+
+                    </uc:UTabItem>
+
+                    <uc:UTabItem Header="Mevcut İtfa"  
+                                 x:Name="tbiMevcutItfa">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="*" />
+                            </Grid.RowDefinitions>
+
+                            <uc:UDataGrid IsCaptionVisible="False"
+                               BehaviourType="ItemSource"
+                               IsGroupingAllowed="False"
+                               IsEditingAllowed="False"
+                               EditMode="None"
+                               ItemsSource="{Binding Path=MevcutItfa, Mode=TwoWay}"
+                               Height="Auto" 
+                               Foreground="DarkGray"
+                               VerticalAlignment="Stretch" RowCountPerPage="{Binding Path=RowDeleted, Mode=TwoWay}">
+                                <uc:UDataGrid.Columns>
+                                    <uc:UDataGridColumnCollection>
+                                        <uc:UDataGridColumn ColumnName="TaksitNo"
+                                                 Header="Taksit No"
+                                                 IsAllowBestFit="True"
+                                                 IsEditingAllowed="False" />
+
+                                        <uc:UDataGridColumn ColumnName="TaksitTarihi"
+                                                 Header="Taksit Tarihi"
+                                                 ColumnFormat="ddSepMMSepyyyy"
+                                                 IsAllowBestFit="True"
+                                                 IsEditingAllowed="False" />
+
+                                        <uc:UDataGridColumn ColumnName="TaksitAnaparaTutari"
+                                                 Header="Ana Para Tutarı"
+                                                 ColumnFormat="Number2"
+                                                 IsAllowBestFit="True"
+                                                 IsEditingAllowed="False" />
+
+                                        <uc:UDataGridColumn ColumnName="TaksitFaizTutari"
+                                                 Header="Faiz Tutarı"
+                                                 ColumnFormat="Number2"
+                                                 IsAllowBestFit="True"
+                                                 IsEditingAllowed="True" />
+
+                                        <uc:UDataGridColumn ColumnName="TaksitKomisyonTutari"
+                                                 Header="Komisyon Tutarı"
+                                                 ColumnFormat="Number2"
+                                                 IsAllowBestFit="True"
+                                                 IsEditingAllowed="False" />
+                                        <uc:UDataGridColumn ColumnName="KomisyonOrani"
+                                                 Header="Komisyon Oranı"
+                                                 ColumnFormat="Number2"
+                                                 IsAllowBestFit="True"
+                                                 IsEditingAllowed="False" />
+                                        <uc:UDataGridColumn ColumnName="FaizOrani"
+                                                 Header="Faiz Oranı"
+                                                 ColumnFormat="Number2"
+                                                 IsAllowBestFit="True"
+                                                 IsEditingAllowed="False" />
+                                    </uc:UDataGridColumnCollection>
+                                </uc:UDataGrid.Columns>
+                            </uc:UDataGrid>
+                        </Grid>
+
+                    </uc:UTabItem>
+
+                </uc:UTab>
+            </Grid>
+
+        </uc:UExpander>
+
+        <ucs:UExpander IsAddButtonVisible="False"
+                       IsRemoveButtonVisible="False"
+                       Caption="Yetki Bilgileri"
+                       IsCaptionVisible="True"
+                       CaptionTextVerticalAlignment="Top"
+                       AccessMode="Editable"
+                       BehaviourType="None"
+                       Visibility="{Binding Path=YetkiBilgileriPanelVisible, Mode=TwoWay}"
+                       Grid.Row="3"                       
+                       >
+            <Grid>
+                <ucs:UDataGrid Name="dgrYetkiNedenKontrol"
+                               IsCaptionVisible="False"
+                               BehaviourType="ItemSource"
+                               IsGroupingAllowed="False"
+                               IsEditingAllowed="True"
+                               EditMode="UpdateOnly"
+                               Height="200"
+                             
+                               ItemsSource="{Binding Path=LstYetkiNedenKontrol, Mode=TwoWay}">
+                    <ucs:UDataGrid.Columns>
+                        <ucs:UDataGridColumnCollection>
+                            <ucs:UDataGridColumn ColumnName="KrediYetkiNedenKodu"
+                                                 Header="Yetki Neden Kodu"
+                                                 IsEditingAllowed="False" />
+
+                            <ucs:UDataGridColumn ColumnName="YetkiNedenKoduAdi"
+                                                 Header="Yetki Neden Adı"
+                                                 IsEditingAllowed="False" />
+
+                            <ucs:UDataGridColumn ColumnName="CariDegisken"
+                                                 Header="Cari Değer"
+                                                 ColumnFormat="Number2"
+                                                 IsEditingAllowed="False" />
+
+                            <ucs:UDataGridColumn ColumnName="MevcutDegisken"
+                                                 Header="Talep Edilen Değer"
+                                                 ColumnFormat="Number2"
+                                                 IsEditingAllowed="False" />
+
+                            <ucs:UDataGridColumn ColumnName="OnayaKonuDegisken"
+                                                 Header="Onaylanan Değer"
+                                                 ColumnFormat="Number2"
+                                                 IsEditingAllowed="False" />
+
+                            <ucs:UDataGridColumn ColumnName="NedenKoduIlgiliBirim"
+                                                 Header="İlgili Birim"
+                                                 ParameterGroup="KRDNedenKoduIlgiliBirim"
+                                                 IsEditingAllowed="False" />
+
+                            <ucs:UDataGridColumn ColumnName="MuafiyetVar"
+                                                 Header="Muafiyet Var Mı"
+                                                 ParameterGroup="APPYesNo"
+                                                 IsEditingAllowed="False" />
+
+                        </ucs:UDataGridColumnCollection>
+                    </ucs:UDataGrid.Columns>
+                </ucs:UDataGrid>
+            </Grid>
+        </ucs:UExpander>
+
+    </Grid>
+</sc:UItemEditScreen>
