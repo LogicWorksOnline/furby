@@ -1,0 +1,405 @@
+using System.Collections.Generic;
+using Peak.App.DataAccess;
+using Peak.App.Entity.Krediler.TaksitliTicari;
+using Peak.Common.Krediler.TaksitliTicari.DataTransferObjects;
+using Peak.Common.Krediler.TaksitliTicari.Interfaces;
+using Peak.Common.Messaging;
+using System;
+using Peak.App.Service.Krediler.TaksitliTicari.Utility.Sinif;
+using Peak.Common.Krediler.Enums;
+using Peak.Common.Krediler.DataTransferObjects;
+using Peak.Common.Musteri.DataTransferObjects;
+using Peak.Common.Musteri.Enums;
+
+namespace Peak.App.Service.Krediler.TaksitliTicari
+{
+    /// <summary> 
+    ///  
+    /// </summary> 
+    public partial class STaksitliTicari : BaseService, ISTaksitliTicari
+    {
+        /// <summary> 
+        ///  
+        /// </summary> 
+        /// <param name="requestMessage"></param> 
+        /// <returns></returns> 
+        public ResponseMessage GetirEximBankOdemePlaniKrediIdIle(RequestMessage requestMessage)
+        {
+            Database database = new Database();
+            EEximBankOdemePlani eEximBankOdemePlani = new EEximBankOdemePlani(database);
+            List<DTOEximBankOdemePlani> dtoEximBankOdemePlani = eEximBankOdemePlani.GetirKrediIdIle(requestMessage.Get<DTOEximBankOdemePlani>());
+            ResponseMessage responseMessage = new ResponseMessage();
+            responseMessage.Add(dtoEximBankOdemePlani);
+
+            return responseMessage;
+        }
+
+        /// <summary> 
+        ///  ItfaPlan, EximBankOdemePlani, EximBankKredi, Hesap, Oran tablolarýný etkiler
+        /// </summary> 
+        /// <param name="requestMessage"></param> 
+        /// <returns></returns> 
+        public ResponseMessage GuncelleEximItfaPlan(RequestMessage requestMessage)
+        {
+
+            ResponseMessage responseMessage = new ResponseMessage();
+
+            Database database = new Database();
+            ETicariTaksitliItfaPlan eTicariTaksitliItfaPlan = new ETicariTaksitliItfaPlan(database);
+
+            //FinancialInfo financialInformation = requestMessage.FinancialInformation;
+            //WorkflowInfo workflowInformation = requestMessage.WorkflowInformation;
+            TransactionInfo transactionInformation = requestMessage.TransactionInformation;
+
+            List<LDTOTicariTaksitliKrediBilgiIfa> lstTicariTaksitliItfaPlan = requestMessage.Get<List<LDTOTicariTaksitliKrediBilgiIfa>>("GuncellenecekItfa"); //ItfaPlan Güncellenecek Liste
+            List<LDTOTicariTaksitliKrediBilgiIfa> lstTumItfaPlan = requestMessage.Get<List<LDTOTicariTaksitliKrediBilgiIfa>>("TumItfa"); //Tüm liste
+            DTOEximBankKredi SecilenEximBankReferansi = requestMessage.Get<DTOEximBankKredi>("SecilenEximBankReferansi"); //EximBankKredi Secilen Kayýt
+            DTOOranYetki SecilenOranYetki = requestMessage.Get<DTOOranYetki>("SecilenOranYetki"); //OranYetki Secilen Kayýt
+            List<LDTOTicariTaksitliKrediBilgiIfa> mevcutItfa = requestMessage.Get<List<LDTOTicariTaksitliKrediBilgiIfa>>("MevcutItfa"); //Mevcut Itfa
+
+            DTOTicariTaksitliItfaPlan ticariTaksitliItfaPlan = new DTOTicariTaksitliItfaPlan();
+            ticariTaksitliItfaPlan.TaksitliKrediItfaId = lstTicariTaksitliItfaPlan[0].TaksitliKrediItfaId;
+
+            List<DTOTicariTaksitliItfaPlan> lstTicariTaksitliItfaPlanSonuc = new List<DTOTicariTaksitliItfaPlan>();
+
+            //Oku - ItfaPlan
+            System.Diagnostics.Debug.WriteLine("Oku - ItfaPlan Baþladý");
+            lstTicariTaksitliItfaPlanSonuc = eTicariTaksitliItfaPlan.GetirIle(ticariTaksitliItfaPlan);
+            System.Diagnostics.Debug.WriteLine("Oku - ItfaPlan Bitti");
+
+            //Pasife Çek - ItfaPlan
+            System.Diagnostics.Debug.WriteLine("Pasife Çek - ItfaPlan Baþladý");
+
+            List<DTOTicariTaksitliItfaPlan> lstAktifItfa = new List<DTOTicariTaksitliItfaPlan>();
+
+            foreach (DTOTicariTaksitliItfaPlan ticariTaksitliItfaPlanAktif in lstTicariTaksitliItfaPlanSonuc)
+            {
+                if (ticariTaksitliItfaPlanAktif.TaksitTarihi >= Calendar.GetToday() && (ticariTaksitliItfaPlanAktif.DurumKodu == 1))
+                {
+                    ticariTaksitliItfaPlanAktif.DurumKodu = 2;
+                    lstAktifItfa.Add(ticariTaksitliItfaPlanAktif);
+                }
+            }
+
+            eTicariTaksitliItfaPlan.TopluGuncelle(lstAktifItfa);
+
+            System.Diagnostics.Debug.WriteLine("Pasife Çek - ItfaPlan Bitti");
+
+            //Oku - EximBankOdemePlani
+            System.Diagnostics.Debug.WriteLine("Oku - EximBankOdemePlani Baþladý");
+
+            EEximBankOdemePlani eEximBankOdemePlani = new EEximBankOdemePlani(database);
+
+            List<DTOEximBankOdemePlani> lstEximBankOdemePlani = new List<DTOEximBankOdemePlani>();
+            List<DTOEximBankOdemePlani> lstDegisenEximBankOdemePlani = new List<DTOEximBankOdemePlani>();
+            DTOEximBankOdemePlani dtoEximBankOdemePlaný = new DTOEximBankOdemePlani();
+
+            dtoEximBankOdemePlaný.EximBankKrediId = SecilenEximBankReferansi.Id;
+            dtoEximBankOdemePlaný.DurumKodu = Common.Application.Enums.States.Active;
+
+            lstEximBankOdemePlani = eEximBankOdemePlani.GetirAktifPasifKrediIdIle(dtoEximBankOdemePlaný);
+
+            System.Diagnostics.Debug.WriteLine("Oku - EximBankOdemePlani Bitti");
+
+            //Pasife Çek ve Ekle - EximBankOdemePlani
+            System.Diagnostics.Debug.WriteLine("Pasife Çek ve Ekle - EximBankOdemePlani Baþladý");
+
+            if (lstEximBankOdemePlani.Count > 0)
+            {
+                foreach (DTOEximBankOdemePlani eximBankOdemePlani in lstEximBankOdemePlani)
+                {
+                    eximBankOdemePlani.DurumKodu = Common.Application.Enums.States.Passive;
+                    lstDegisenEximBankOdemePlani.Add(eximBankOdemePlani);
+                }
+            }
+
+            eEximBankOdemePlani.TopluGuncelle(lstDegisenEximBankOdemePlani);
+
+            foreach (LDTOTicariTaksitliKrediBilgiIfa itfa in lstTicariTaksitliItfaPlan)
+            {
+                DTOEximBankOdemePlani eximBankOdemePlani = new DTOEximBankOdemePlani();
+                eximBankOdemePlani.TaksitNo = itfa.TaksitNo;
+                eximBankOdemePlani.TaksitTarihi = itfa.TaksitTarihi;
+                eximBankOdemePlani.EximBankKrediId = SecilenEximBankReferansi.Id;
+                eximBankOdemePlani.DurumKodu = Common.Application.Enums.States.Active;
+                eximBankOdemePlani.AnaparaTutari = itfa.TaksitAnaparaTutari;
+                eximBankOdemePlani.FaizTutari = itfa.TaksitFaizTutari;
+
+                eEximBankOdemePlani.Ekle(eximBankOdemePlani);
+            }
+
+            System.Diagnostics.Debug.WriteLine("Pasife Çek ve Ekle - EximBankOdemePlani Bitti");
+
+            //Güncelle - EximBankKredi
+            EEximBankKredi eEximBankKredi = new EEximBankKredi(database);
+            
+            DTOEximBankKredi eximBankKredi = new DTOEximBankKredi();
+            eximBankKredi.Id = lstEximBankOdemePlani[0].EximBankKrediId;
+
+            eximBankKredi = eEximBankKredi.Oku(eximBankKredi);
+
+            eximBankKredi.VadeSuresi = (lstTumItfaPlan[lstTumItfaPlan.Count - 1].TaksitTarihi - lstTumItfaPlan[0].TaksitTarihi).Days;
+
+            eEximBankKredi.Guncelle(eximBankKredi);
+
+            //Yeni Itfa Plan Ekle - ItfaPlan
+            System.Diagnostics.Debug.WriteLine("Yeni Itfa Plan Ekle - ItfaPlan Baþladý");
+
+            List<DTOTicariTaksitliItfaPlan> lstEklenecekTicariTaksitliItfaPlan = new List<DTOTicariTaksitliItfaPlan>();
+
+            foreach (LDTOTicariTaksitliKrediBilgiIfa ticariTaksitliKrediBilgiIfa in lstTicariTaksitliItfaPlan)
+            {
+                DTOTicariTaksitliItfaPlan ticariTaksitliItfaPlan2 = new DTOTicariTaksitliItfaPlan();
+                ticariTaksitliItfaPlan2.BSMVHavuzu = ticariTaksitliKrediBilgiIfa.BSMVHavuzu;
+                ticariTaksitliItfaPlan2.BSMVOrani = ticariTaksitliKrediBilgiIfa.BsmvOrani;
+                ticariTaksitliItfaPlan2.DurumKodu = 1;
+                ticariTaksitliItfaPlan2.EklemeliOdeme = ticariTaksitliKrediBilgiIfa.EklemeliOdeme;
+                ticariTaksitliItfaPlan2.EsnekAnaparaTutari = ticariTaksitliKrediBilgiIfa.EsnekAnaparaTutari;
+                ticariTaksitliItfaPlan2.EsnekTaksitTarihi = ticariTaksitliKrediBilgiIfa.EsnekTaksitTarihi;
+                ticariTaksitliItfaPlan2.EsnekTaksitTutari = ticariTaksitliKrediBilgiIfa.EsnekTaksitTutari;
+                ticariTaksitliItfaPlan2.FaizDestekTutari = ticariTaksitliKrediBilgiIfa.FaizDestekTutari;
+                ticariTaksitliItfaPlan2.FaizHavuzu = ticariTaksitliKrediBilgiIfa.FaizHavuzu;
+                ticariTaksitliItfaPlan2.FaizOrani = ticariTaksitliKrediBilgiIfa.FaizOrani;
+                ticariTaksitliItfaPlan2.FTFHavuzu = ticariTaksitliKrediBilgiIfa.FTFHavuzu;
+                ticariTaksitliItfaPlan2.FTFTesvikHavuzu = ticariTaksitliKrediBilgiIfa.FTFTesvikHavuzu;
+                ticariTaksitliItfaPlan2.HayatSigortasiPrimTutari = ticariTaksitliKrediBilgiIfa.HayatSigortasiPrimTutari;
+                ticariTaksitliItfaPlan2.KalanAnapara = ticariTaksitliKrediBilgiIfa.KalanAnapara;
+                ticariTaksitliItfaPlan2.KKDFHavuzu = ticariTaksitliKrediBilgiIfa.KKDFHavuzu;
+                ticariTaksitliItfaPlan2.KomisyonHavuzu = ticariTaksitliKrediBilgiIfa.KomisyonHavuzu;
+
+                if (SecilenOranYetki != null)
+                    ticariTaksitliItfaPlan2.KomisyonOrani = SecilenOranYetki.UygulanacakOran;
+                else
+                    ticariTaksitliItfaPlan2.KomisyonOrani = ticariTaksitliKrediBilgiIfa.KomisyonOrani;
+
+                ticariTaksitliItfaPlan2.KrediHesapNo = ticariTaksitliKrediBilgiIfa.KrediHesapNo;
+                ticariTaksitliItfaPlan2.OdemesizDonemVadeTarihi = ticariTaksitliKrediBilgiIfa.OdemesizDonemVadeTarihi;
+                ticariTaksitliItfaPlan2.OdemesizDonemVadeTipi = ticariTaksitliKrediBilgiIfa.OdemesizDonemVadeTipi;
+                ticariTaksitliItfaPlan2.TahakkukYapildi = ticariTaksitliKrediBilgiIfa.TahakkukYapildi;
+                ticariTaksitliItfaPlan2.TaksitAnaparaTutari = ticariTaksitliKrediBilgiIfa.TaksitAnaparaTutari;
+                ticariTaksitliItfaPlan2.TaksitFaizTutari = ticariTaksitliKrediBilgiIfa.TaksitFaizTutari;
+                ticariTaksitliItfaPlan2.TaksitKomisyonTutari = ticariTaksitliKrediBilgiIfa.TaksitKomisyonTutari;
+                ticariTaksitliItfaPlan2.TaksitliKrediItfaId = ticariTaksitliKrediBilgiIfa.TaksitliKrediItfaId;
+                ticariTaksitliItfaPlan2.TaksitNo = ticariTaksitliKrediBilgiIfa.TaksitNo;
+                ticariTaksitliItfaPlan2.TaksitTarihi = ticariTaksitliKrediBilgiIfa.TaksitTarihi;
+                ticariTaksitliItfaPlan2.TaksitVadeTarihi = ticariTaksitliKrediBilgiIfa.TaksitVadeTarihi;
+                ticariTaksitliItfaPlan2.TaksitVadeTipi = ticariTaksitliKrediBilgiIfa.TaksitVadeTipi;
+                ticariTaksitliItfaPlan2.VadeFarkiTutari = ticariTaksitliKrediBilgiIfa.VadeFarkiTutari;
+                ticariTaksitliItfaPlan2.TransactionObjectId = transactionInformation.TransactionObjectId.ToString();
+                //ticariTaksitliItfaPlan2.TransactionObjectId = transactionInformation.TransactionCode.ToString();
+
+                lstEklenecekTicariTaksitliItfaPlan.Add(ticariTaksitliItfaPlan2);
+            }
+
+            eTicariTaksitliItfaPlan.TopluEkle(lstEklenecekTicariTaksitliItfaPlan);
+
+            System.Diagnostics.Debug.WriteLine("Yeni Itfa Plan Ekle - ItfaPlan Bitti");
+
+            //Oku - Hesap
+            System.Diagnostics.Debug.WriteLine("Oku - Hesap Baþladý");
+
+            ETicariTaksitliHesap eTicariTaksitliHesap = new ETicariTaksitliHesap(database);
+
+            DTOTicariTaksitliHesap ticariTaksitliHesap = new DTOTicariTaksitliHesap();
+            ticariTaksitliHesap.KrediHesapNo = lstTicariTaksitliItfaPlan[0].KrediHesapNo;
+            ticariTaksitliHesap.SubeKodu = SecilenEximBankReferansi.SubeKodu;
+            ticariTaksitliHesap.MusteriNo = SecilenEximBankReferansi.MusteriNo;
+            ticariTaksitliHesap.UrunKodu = 55500360;
+            ticariTaksitliHesap.KampanyaKodu = 0;
+
+            List<DTOTicariTaksitliHesap> lstOkunanTicariTaksitliHesap = new List<DTOTicariTaksitliHesap>();
+
+            lstOkunanTicariTaksitliHesap = eTicariTaksitliHesap.GetirIle(ticariTaksitliHesap);
+
+            System.Diagnostics.Debug.WriteLine("Oku - Hesap Bitti");
+
+            //Güncelle - Hesap
+            System.Diagnostics.Debug.WriteLine("Güncelle - Hesap Baþladý");
+
+            int vadeSuresi = Convert.ToInt32((lstTumItfaPlan[lstTumItfaPlan.Count - 1].TaksitTarihi - lstTumItfaPlan[0].TaksitTarihi).TotalDays);
+
+            foreach (DTOTicariTaksitliHesap ticariTaksitliHesap2 in lstOkunanTicariTaksitliHesap)
+            {
+                ticariTaksitliHesap2.KomisyonOrani = lstTicariTaksitliItfaPlan[0].KomisyonOrani;
+                ticariTaksitliHesap2.FaizOrani = lstTicariTaksitliItfaPlan[0].FaizOrani;
+                ticariTaksitliHesap2.VadeSuresi = vadeSuresi;
+                ticariTaksitliHesap2.TransactionObjectId = requestMessage.TransactionInformation.TransactionObjectId.ToString();
+                ticariTaksitliHesap2.VadeSonuTarihi = 
+                //ticariTaksitliHesap2.FiyatReferansi = ?;
+                ticariTaksitliHesap2.VadeSonuTarihi = lstTumItfaPlan[lstTumItfaPlan.Count - 1].TaksitTarihi;
+
+                eTicariTaksitliHesap.Guncelle(ticariTaksitliHesap2);
+            }
+
+            //Güncelle - KrediItfa
+
+
+
+            System.Diagnostics.Debug.WriteLine("Güncelle - Hesap Bitti");
+
+            //Oku - Oran
+            System.Diagnostics.Debug.WriteLine("Oku - Oran Baþladý");
+
+            EOran eOran = new EOran(database);
+
+            List<DTOOran> lstOran = new List<DTOOran>();
+            DTOOran oran = new DTOOran();
+            oran.KrediHesapNo = lstTicariTaksitliItfaPlan[0].KrediHesapNo;
+
+            lstOran = eOran.GetirByHesapNoIle(oran);
+
+            System.Diagnostics.Debug.WriteLine("Oku - Oran Bitti");
+
+            ParseOran parseOranFaiz = new ParseOran();
+            ParseOran parseOranKomisyon = new ParseOran();
+
+            DTOOran yeniOranFaiz = new DTOOran()
+            {
+                OranTuru = Convert.ToInt32(KrediOranTurleri.FaizOrani),
+                Oran = lstTicariTaksitliItfaPlan[0].FaizOrani,
+                BaslangicTarihi = lstTicariTaksitliItfaPlan[0].TaksitTarihi,
+                KrediHesapNo = lstOran[0].KrediHesapNo,
+                IslemTarihi = Calendar.GetToday(),
+                TransactionObjectId = requestMessage.TransactionInformation.TransactionObjectId.ToString(),
+                BitisTarihi = DateTime.MinValue
+            };
+            DTOOran yeniOranKomisyon = new DTOOran()
+            {
+                OranTuru = Convert.ToInt32(KrediOranTurleri.KomisyonOrani),
+                Oran = lstTicariTaksitliItfaPlan[lstTicariTaksitliItfaPlan.Count - 1].KomisyonOrani,
+                BaslangicTarihi = lstTicariTaksitliItfaPlan[0].TaksitTarihi,
+                KrediHesapNo = lstOran[0].KrediHesapNo,
+                IslemTarihi = Calendar.GetToday(),
+                TransactionObjectId = requestMessage.TransactionInformation.TransactionObjectId.ToString(),
+                BitisTarihi = DateTime.MinValue
+            };
+
+            //Sil ve Ekle - Oran
+            System.Diagnostics.Debug.WriteLine("Sil ve Ekle - Oran Baþladý");
+
+            foreach (DTOOran eskiOran in lstOran)
+            {
+                if (eskiOran.OranTuru == 1) //faiz
+                {
+                    parseOranFaiz.Ekle(eskiOran);
+                }
+
+                if (eskiOran.OranTuru == 2) //komisyon
+                {
+                    parseOranKomisyon.Ekle(eskiOran);
+                }
+            }
+
+            List<DTOOran> lstEklenecekOranFaiz = parseOranFaiz.GetirEklenecekTaksitliOran(yeniOranFaiz);
+            List<DTOOran> lstEklenecekOranKomisyon = parseOranKomisyon.GetirEklenecekTaksitliOran(yeniOranKomisyon);
+
+            List<DTOOran> lstSilinecekOranFaiz = parseOranFaiz.GetirSilinecekTaksitliOran(yeniOranFaiz);
+            List<DTOOran> lstSilinecekOranKomisyon = parseOranKomisyon.GetirSilinecekTaksitliOran(yeniOranKomisyon);
+
+            for(int i = 0; i<lstEklenecekOranFaiz.Count; i++)
+            {
+                lstEklenecekOranFaiz[i].IslemTarihi = Calendar.GetToday();
+                
+                if(i == lstEklenecekOranFaiz.Count-1)
+                    lstEklenecekOranFaiz[i].BitisTarihi = DateTime.MinValue;
+                
+                eOran.Ekle(lstEklenecekOranFaiz[i]);
+            }
+
+            for (int i = 0; i < lstEklenecekOranKomisyon.Count; i++)
+            {
+                lstEklenecekOranKomisyon[i].IslemTarihi = Calendar.GetToday();
+
+                if (i == lstEklenecekOranKomisyon.Count - 1)
+                    lstEklenecekOranKomisyon[i].BitisTarihi = DateTime.MinValue;
+
+                eOran.Ekle(lstEklenecekOranKomisyon[i]);
+            }
+
+            foreach (DTOOran silinecekOranFaiz in lstSilinecekOranFaiz)
+                eOran.Sil(silinecekOranFaiz);
+
+            foreach (DTOOran silinecekOranKomisyon in lstSilinecekOranKomisyon)
+                eOran.Sil(silinecekOranKomisyon);
+
+            System.Diagnostics.Debug.WriteLine("Sil ve Ekle - Oran Bitti");
+
+            return responseMessage;
+        }
+
+        
+
+
+        /// <summary> 
+        ///  
+        /// </summary> 
+        /// <param name="requestMessage"></param> 
+        /// <returns></returns> 
+        public ResponseMessage GetirAktifPasifKrediIdIle(RequestMessage requestMessage)
+        {
+            Database database = new Database();
+            EEximBankOdemePlani eEximBankOdemePlani = new EEximBankOdemePlani(database);
+            List<DTOEximBankOdemePlani> lstEximBankOdemePlani = eEximBankOdemePlani.GetirAktifPasifKrediIdIle(requestMessage.Get<DTOEximBankOdemePlani>());
+            ResponseMessage responseMessage = new ResponseMessage();
+            responseMessage.Add(lstEximBankOdemePlani);
+
+            return responseMessage;
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="requestMessage"></param>
+        /// <returns></returns>
+        public ResponseMessage GetirEximBankOdemePlaniOdenmemis(RequestMessage requestMessage)
+        {
+            Database database = new Database();
+            EEximBankOdemePlani eEximBankOdemePlani = new EEximBankOdemePlani(database);
+            List<LDTOEximSorgu> lstEximBankOdemePlani = eEximBankOdemePlani.GetirEximBankOdemePlaniOdenmemis(requestMessage.Get<LDTOEximSorgu>());
+            ResponseMessage responseMessage = new ResponseMessage();
+
+            responseMessage.Add(lstEximBankOdemePlani);
+
+            return responseMessage;
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="requestMessage"></param>
+        /// <returns></returns>
+        public ResponseMessage GetirMusteriBilgisi(RequestMessage requestMessage)
+        {
+            ResponseMessage res = new ResponseMessage();
+
+            DTOMusteriGercek musteriGercek = null;
+            DTOMusteriTuzel musteriTuzel = null;
+
+            DTOEximBankKredi dtoEximBankKredi = requestMessage.Get<DTOEximBankKredi>();
+
+            string musteriUnvani = string.Empty;
+
+            DTOMusteri musteri = okuMusteriOzet(requestMessage, dtoEximBankKredi.MusteriNo, out musteriGercek, out musteriTuzel);
+            musteri = musteri ?? new DTOMusteri();
+            if (musteri.MusteriTipi == MusteriTipleri.Gercek || musteri.MusteriTipi == MusteriTipleri.Ticari)
+            {
+                musteriUnvani = string.Format("{0} {1}", musteriGercek.Ad, musteriGercek.Soyad);
+                res.Add(musteriGercek);
+            }
+            else
+            {
+                if (!String.IsNullOrWhiteSpace(musteriTuzel.TuzelUnvani))
+                {
+                    musteriUnvani = musteriTuzel.TuzelUnvani;
+                    res.Add(musteriTuzel);
+                }
+            }
+
+
+            return res;
+        }
+        
+    }
+}
+
+

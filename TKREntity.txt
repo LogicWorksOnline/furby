@@ -1,0 +1,499 @@
+using System;
+using System.Collections.Generic;
+using System.Data;
+using Peak.App.DataAccess;
+using Peak.Common.Application.Enums;
+using Peak.Common.Enums;
+using Peak.Common.Exceptions;
+using Peak.Common.Krediler.Enums;
+using Peak.Common.Krediler.TaksitliTicari.DataTransferObjects;
+
+namespace Peak.App.Entity.Krediler.TaksitliTicari
+{
+    /// <summary> 
+    ///  
+    /// </summary> 
+    public abstract partial class BEEximBankKredi : BaseEntity
+    {
+        #region Constructors
+
+        /// <summary> 
+        /// Ctor 
+        /// </summary> 
+        /// <param name="database">Database Object</param> 
+        protected BEEximBankKredi(Database database)
+            : base(database)
+        {
+        }
+
+        #endregion Constructors
+
+        #region Public Methods
+
+        /// <summary> 
+        ///  
+        /// </summary> 
+        /// <param name="dto"></param> 
+        /// <returns></returns> 
+        public virtual DTOTicariTaksitliHesap OkuDisDestekReferansIle(DTOTicariTaksitliHesap dto)
+        {
+            DatabaseParameters parameters = new DatabaseParameters();
+            parameters.AddInParameter("DisDestekBasvuruNo", dto.DisDestekBasvuruNo, DatabaseTypes.Int64);
+            parameters.AddOutParameter("RC", null, DatabaseTypes.RefCursor);
+
+            DataTable table = this.Database.ExecuteDataSet("TKR_S_HESAPBYDISDESTEKBASVURU", parameters).Tables[0];
+
+            if (table.Rows.Count == 0)
+                throw new RecordNotFoundException("Hesap", "KrediHesapNo", dto.KrediHesapNo.ToString());
+
+            DTOTicariTaksitliHesap result = new DTOTicariTaksitliHesap();
+            result.KrediHesapNo = table.Rows[0]["KREDIHESAPNO"] == DBNull.Value ? 0 : Convert.ToInt64(table.Rows[0]["KREDIHESAPNO"]);
+            result.SubeKodu = table.Rows[0]["SUBEKODU"].ToString();
+            result.MusteriNo = table.Rows[0]["MUSTERINO"].ToString();
+            result.UrunKodu = table.Rows[0]["URUNKODU"] == DBNull.Value ? 0 : Convert.ToInt32(table.Rows[0]["URUNKODU"]);
+            result.KampanyaKodu = table.Rows[0]["KAMPANYAKODU"] == DBNull.Value ? 0 : Convert.ToInt64(table.Rows[0]["KAMPANYAKODU"]);
+            result.KampanyaReferansi = table.Rows[0]["KAMPANYAREFERANSI"] == DBNull.Value ? 0 : Convert.ToInt64(table.Rows[0]["KAMPANYAREFERANSI"]);
+            result.KrediDurumKodu = table.Rows[0]["KREDIDURUMKODU"] == DBNull.Value ? Byte.MinValue : Convert.ToByte(table.Rows[0]["KREDIDURUMKODU"]);
+            result.KrediDurumDegisiklikTarihi = table.Rows[0]["KREDIDURUMDEGISIKLIKTARIHI"] == DBNull.Value ? DateTime.MinValue : Convert.ToDateTime(table.Rows[0]["KREDIDURUMDEGISIKLIKTARIHI"]);
+            result.KrediDurumOnayReferansi = table.Rows[0]["KREDIDURUMONAYREFERANSI"].ToString();
+            result.KrediDurumNedeni = table.Rows[0]["KREDIDURUMNEDENI"] == DBNull.Value ? 0 : Convert.ToInt32(table.Rows[0]["KREDIDURUMNEDENI"]);
+            result.KrediTutari = table.Rows[0]["KREDITUTARI"] == DBNull.Value ? 0 : Convert.ToDecimal(table.Rows[0]["KREDITUTARI"]);
+            result.KrediKullandirimTarihi = table.Rows[0]["KREDIKULLANDIRIMTARIHI"] == DBNull.Value ? DateTime.MinValue : Convert.ToDateTime(table.Rows[0]["KREDIKULLANDIRIMTARIHI"]);
+            result.VadeSonuTarihi = table.Rows[0]["VADESONUTARIHI"] == DBNull.Value ? DateTime.MinValue : Convert.ToDateTime(table.Rows[0]["VADESONUTARIHI"]);
+            result.VadeTuru = table.Rows[0]["VADETURU"] == DBNull.Value ? KrediZamanOlculeri.None : (KrediZamanOlculeri)Convert.ToByte(table.Rows[0]["VADETURU"]);
+            result.VadeSuresi = table.Rows[0]["VADESURESI"] == DBNull.Value ? 0 : Convert.ToInt32(table.Rows[0]["VADESURESI"]);
+            result.Skont = table.Rows[0]["SKONT"].ToString();
+            result.KalanAnaPara = table.Rows[0]["KALANANAPARA"] == DBNull.Value ? 0 : Convert.ToDecimal(table.Rows[0]["KALANANAPARA"]);
+            result.DovizCinsi = table.Rows[0]["DOVIZCINSI"].ToString();
+            result.KrediKullandirimTipi = table.Rows[0]["KREDIKULLANDIRIMTIPI"] == DBNull.Value ? KrediKullandirimTipleri.None : (KrediKullandirimTipleri)Convert.ToByte(table.Rows[0]["KREDIKULLANDIRIMTIPI"]);
+            result.KullandirimOdemeTipi = table.Rows[0]["KULLANDIRIMODEMETIPI"] == DBNull.Value ? 0 : Convert.ToInt32(table.Rows[0]["KULLANDIRIMODEMETIPI"]);
+            result.KrediTahsilatOdemeTipi = table.Rows[0]["KREDITAHSILATODEMETIPI"] == DBNull.Value ? Byte.MinValue : Convert.ToByte(table.Rows[0]["KREDITAHSILATODEMETIPI"]);
+            result.KullandirimMevduatHesapNo = table.Rows[0]["KULLANDIRIMMEVDUATHESAPNO"].ToString();
+            result.TahsilatMevduatHesapNo = table.Rows[0]["TAHSILATMEVDUATHESAPNO"].ToString();
+            result.MakasMevduatHesapNo = table.Rows[0]["MAKASMEVDUATHESAPNO"].ToString();
+            result.KarsiSubeKodu = table.Rows[0]["KARSISUBEKODU"].ToString();
+            result.FaizTipi = table.Rows[0]["FAIZTIPI"] == DBNull.Value ? KrediFaizTipleri.None : (KrediFaizTipleri)Convert.ToByte(table.Rows[0]["FAIZTIPI"]);
+            result.DegiskenFaizTipi = table.Rows[0]["DEGISKENFAIZTIPI"] == DBNull.Value ? KrediDegiskenFaizTipleri.None : (KrediDegiskenFaizTipleri)Convert.ToByte(table.Rows[0]["DEGISKENFAIZTIPI"]);
+            result.FaizOrani = table.Rows[0]["FAIZORANI"] == DBNull.Value ? 0 : Convert.ToDecimal(table.Rows[0]["FAIZORANI"]);
+            result.KomisyonOrani = table.Rows[0]["KOMISYONORANI"] == DBNull.Value ? 0 : Convert.ToDecimal(table.Rows[0]["KOMISYONORANI"]);
+            result.FTFOrani = table.Rows[0]["FTFORANI"] == DBNull.Value ? 0 : Convert.ToDecimal(table.Rows[0]["FTFORANI"]);
+            result.FTFTesvikOrani = table.Rows[0]["FTFTESVIKORANI"] == DBNull.Value ? 0 : Convert.ToDecimal(table.Rows[0]["FTFTESVIKORANI"]);
+            result.FaizDestekOrani = table.Rows[0]["FAIZDESTEKORANI"] == DBNull.Value ? 0 : Convert.ToDecimal(table.Rows[0]["FAIZDESTEKORANI"]);
+            result.SpreadOrani = table.Rows[0]["SPREADORANI"] == DBNull.Value ? 0 : Convert.ToDecimal(table.Rows[0]["SPREADORANI"]);
+            result.FaizDestekBitisTarihi = table.Rows[0]["FAIZDESTEKBITISTARIHI"] == DBNull.Value ? DateTime.MinValue : Convert.ToDateTime(table.Rows[0]["FAIZDESTEKBITISTARIHI"]);
+            result.KrediKaynagi = table.Rows[0]["KREDIKAYNAGI"] == DBNull.Value ? 0 : Convert.ToInt32(table.Rows[0]["KREDIKAYNAGI"]);
+            result.CekisNo = table.Rows[0]["CEKISNO"] == DBNull.Value ? 0 : Convert.ToInt32(table.Rows[0]["CEKISNO"]);
+            result.TahakkukDonemi = table.Rows[0]["TAHAKKUKDONEMI"] == DBNull.Value ? 0 : Convert.ToInt32(table.Rows[0]["TAHAKKUKDONEMI"]);
+            result.TahakkukPeriyodu = table.Rows[0]["TAHAKKUKPERIYODU"] == DBNull.Value ? 0 : Convert.ToInt32(table.Rows[0]["TAHAKKUKPERIYODU"]);
+            result.TahakkukPeriyotTipi = table.Rows[0]["TAHAKKUKPERIYOTTIPI"] == DBNull.Value ? Byte.MinValue : Convert.ToByte(table.Rows[0]["TAHAKKUKPERIYOTTIPI"]);
+            result.YilSonuKalanFaizReeskont = table.Rows[0]["YILSONUKALANFAIZREESKONT"] == DBNull.Value ? 0 : Convert.ToDecimal(table.Rows[0]["YILSONUKALANFAIZREESKONT"]);
+            result.YilSonuKalanKomisyonReeskont = table.Rows[0]["YILSONUKALANKOMISYONREESKONT"] == DBNull.Value ? 0 : Convert.ToDecimal(table.Rows[0]["YILSONUKALANKOMISYONREESKONT"]);
+            result.YilSonuKalanFTFReeskont = table.Rows[0]["YILSONUKALANFTFREESKONT"] == DBNull.Value ? 0 : Convert.ToDecimal(table.Rows[0]["YILSONUKALANFTFREESKONT"]);
+            result.YilSonuKalanFTFTesvikReeskont = table.Rows[0]["YILSONUKALANFTFTESVIKREESKONT"] == DBNull.Value ? 0 : Convert.ToDecimal(table.Rows[0]["YILSONUKALANFTFTESVIKREESKONT"]);
+            result.KullanimAmaci = table.Rows[0]["KULLANIMAMACI"] == DBNull.Value ? 0 : Convert.ToInt32(table.Rows[0]["KULLANIMAMACI"]);
+            result.OdenecekTaksitNo = table.Rows[0]["ODENECEKTAKSITNO"] == DBNull.Value ? 0 : Convert.ToInt32(table.Rows[0]["ODENECEKTAKSITNO"]);
+            result.MuafiyetTipi = table.Rows[0]["MUAFIYETTIPI"] == DBNull.Value ? Byte.MinValue : Convert.ToByte(table.Rows[0]["MUAFIYETTIPI"]);
+            result.YatirimIsletme = table.Rows[0]["YATIRIMISLETME"] == DBNull.Value ? 0 : Convert.ToInt32(table.Rows[0]["YATIRIMISLETME"]);
+            result.IhracatGarantili = table.Rows[0]["IHRACATGARANTILI"] == DBNull.Value ? 0 : Convert.ToInt32(table.Rows[0]["IHRACATGARANTILI"]);
+            result.SendikasyonId = table.Rows[0]["SENDIKASYONIID"] == DBNull.Value ? 0 : Convert.ToInt64(table.Rows[0]["SENDIKASYONIID"]);
+            result.HayatSigortasi = table.Rows[0]["HAYATSIGORTASI"] == DBNull.Value ? 0 : Convert.ToInt32(table.Rows[0]["HAYATSIGORTASI"]);
+            result.DisDestekBasvuruNo = table.Rows[0]["DISDESTEKBASVURUNO"] == DBNull.Value ? 0 : Convert.ToInt64(table.Rows[0]["DISDESTEKBASVURUNO"]);
+            result.FiyatAlternatifi = table.Rows[0]["FIYATALTERNATIFI"] == DBNull.Value ? 0 : Convert.ToInt32(table.Rows[0]["FIYATALTERNATIFI"]);
+            result.FiyatReferansi = table.Rows[0]["FIYATREFERANSI"] == DBNull.Value ? 0 : Convert.ToInt64(table.Rows[0]["FIYATREFERANSI"]);
+            result.MasrafReferansi = table.Rows[0]["MASRAFREFERANSI"] == DBNull.Value ? 0 : Convert.ToInt64(table.Rows[0]["MASRAFREFERANSI"]);
+            result.FaizDestekTipi = table.Rows[0]["FAIZDESTEKTIPI"] == DBNull.Value ? 0 : Convert.ToInt32(table.Rows[0]["FAIZDESTEKTIPI"]);
+            result.FaizDestekHesapNo = table.Rows[0]["FAIZDESTEKHESAPNO"].ToString();
+            result.FaizDestekTutari = table.Rows[0]["FAIZDESTEKTUTARI"] == DBNull.Value ? 0 : Convert.ToDecimal(table.Rows[0]["FAIZDESTEKTUTARI"]);
+            result.KalanFaizDestekTutari = table.Rows[0]["KALANFAIZDESTEKTUTARI"] == DBNull.Value ? 0 : Convert.ToDecimal(table.Rows[0]["KALANFAIZDESTEKTUTARI"]);
+            result.MusteriPesinFaizTutari = table.Rows[0]["MUSTERIPESINFAIZTUTARI"] == DBNull.Value ? 0 : Convert.ToDecimal(table.Rows[0]["MUSTERIPESINFAIZTUTARI"]);
+            result.MusteriKalanPesinFaizTutari = table.Rows[0]["MUSTERIKALANPESINFAIZTUTARI"] == DBNull.Value ? 0 : Convert.ToDecimal(table.Rows[0]["MUSTERIKALANPESINFAIZTUTARI"]);
+            result.FirmaPesinFaizTutari = table.Rows[0]["FIRMAPESINFAIZTUTARI"] == DBNull.Value ? 0 : Convert.ToDecimal(table.Rows[0]["FIRMAPESINFAIZTUTARI"]);
+            result.FirmaKalanPesinFaizTutari = table.Rows[0]["FIRMAKALANPESINFAIZTUTARI"] == DBNull.Value ? 0 : Convert.ToDecimal(table.Rows[0]["FIRMAKALANPESINFAIZTUTARI"]);
+            result.DuzenliOdeme = table.Rows[0]["DUZENLIODEME"] == DBNull.Value ? Byte.MinValue : Convert.ToByte(table.Rows[0]["DUZENLIODEME"]);
+            result.IsYeriProjeId = table.Rows[0]["ISYERIPROJEID"] == DBNull.Value ? 0 : Convert.ToInt64(table.Rows[0]["ISYERIPROJEID"]);
+            result.FirmaBlokeId = table.Rows[0]["FIRMABLOKEID"] == DBNull.Value ? 0 : Convert.ToInt64(table.Rows[0]["FIRMABLOKEID"]);
+            result.FirmaBlokePeriyotTuru = table.Rows[0]["FIRMABLOKEPERIYOTTURU"] == DBNull.Value ? 0 : Convert.ToInt32(table.Rows[0]["FIRMABLOKEPERIYOTTURU"]);
+            result.FirmaBlokeCozmePeriyodu = table.Rows[0]["FIRMABLOKECOZMEPERIYODU"] == DBNull.Value ? 0 : Convert.ToInt32(table.Rows[0]["FIRMABLOKECOZMEPERIYODU"]);
+            result.FirmaBlokeSureTuru = table.Rows[0]["FIRMABLOKESURETURU"] == DBNull.Value ? 0 : Convert.ToInt32(table.Rows[0]["FIRMABLOKESURETURU"]);
+            result.FirmaBlokeSuresi = table.Rows[0]["FIRMABLOKESURESI"] == DBNull.Value ? 0 : Convert.ToInt32(table.Rows[0]["FIRMABLOKESURESI"]);
+            result.BayiKrediKodu = table.Rows[0]["BAYIKREDIKODU"] == DBNull.Value ? 0 : Convert.ToInt32(table.Rows[0]["BAYIKREDIKODU"]);
+            result.BayiMarkaKodu = table.Rows[0]["BAYIMARKAKODU"] == DBNull.Value ? 0 : Convert.ToInt64(table.Rows[0]["BAYIMARKAKODU"]);
+            result.BayiModelKodu = table.Rows[0]["BAYIMODELKODU"] == DBNull.Value ? 0 : Convert.ToInt64(table.Rows[0]["BAYIMODELKODU"]);
+            result.BankamizSigortaBilgisi = table.Rows[0]["BANKAMIZSIGORTABILGISI"] == DBNull.Value ? 0 : Convert.ToInt32(table.Rows[0]["BANKAMIZSIGORTABILGISI"]);
+            result.FiyatMakami = table.Rows[0]["FIYATMAKAMI"] == DBNull.Value ? 0 : Convert.ToInt32(table.Rows[0]["FIYATMAKAMI"]);
+            result.Aciklama = table.Rows[0]["ACIKLAMA"].ToString();
+            result.EndeksleyenDovizCinsi = table.Rows[0]["ENDEKSLEYENDOVIZCINSI"].ToString();
+            result.EndeksleyenKrediTutari = table.Rows[0]["ENDEKSLEYENKREDITUTARI"] == DBNull.Value ? 0 : Convert.ToDecimal(table.Rows[0]["ENDEKSLEYENKREDITUTARI"]);
+            result.EndeksleyenKalanAnaparaTutari = table.Rows[0]["ENDEKSLEYENKALANANAPARATUTARI"] == DBNull.Value ? 0 : Convert.ToDecimal(table.Rows[0]["ENDEKSLEYENKALANANAPARATUTARI"]);
+            result.SendikasyonBilgisi = table.Rows[0]["SENDIKASYONBILGISI"] == DBNull.Value ? Byte.MinValue : Convert.ToByte(table.Rows[0]["SENDIKASYONBILGISI"]);
+            result.FaizGiderTutari = table.Rows[0]["FAIZGIDERTUTARI"] == DBNull.Value ? 0 : Convert.ToDecimal(table.Rows[0]["FAIZGIDERTUTARI"]);
+            result.KomisyonGiderTutari = table.Rows[0]["KOMISYONGIDERTUTARI"] == DBNull.Value ? 0 : Convert.ToDecimal(table.Rows[0]["KOMISYONGIDERTUTARI"]);
+            result.EkVade = table.Rows[0]["EKVADE"] == DBNull.Value ? 0 : Convert.ToInt32(table.Rows[0]["EKVADE"]);
+            result.EkVadeTuru = table.Rows[0]["EKVADETURU"] == DBNull.Value ? KrediZamanOlculeri.None : (KrediZamanOlculeri)Convert.ToByte(table.Rows[0]["EKVADETURU"]);
+            result.HayatSigortasiPrimOdemeTuru = table.Rows[0]["HAYATSIGORTASIPRIMODEMETURU"] == DBNull.Value ? Byte.MinValue : Convert.ToByte(table.Rows[0]["HAYATSIGORTASIPRIMODEMETURU"]);
+            result.TransactionObjectId = table.Rows[0]["TRANSACTIONOBJECTID"].ToString();
+            result.HazineDestegi = table.Rows[0]["HAZINEDESTEGI"] == DBNull.Value ? Byte.MinValue : Convert.ToByte(table.Rows[0]["HAZINEDESTEGI"]);
+            result.LimitTurKodu = table.Rows[0]["LIMITTURKODU"].ToString();
+            result.TemditEdilenTarih = table.Rows[0]["TEMDITEDILENTARIH"] == DBNull.Value ? DateTime.MinValue : Convert.ToDateTime(table.Rows[0]["TEMDITEDILENTARIH"]);
+            result.YilSonuAnaparaKurFarkFarkReeskont = table.Rows[0]["YILSONUANAPARAKURFARKREESKONT"] == DBNull.Value ? 0 : Convert.ToDecimal(table.Rows[0]["YILSONUANAPARAKURFARKREESKONT"]);
+            result.KrediTutariTL = table.Rows[0]["KREDITUTARITL"] == DBNull.Value ? 0 : Convert.ToDecimal(table.Rows[0]["KREDITUTARITL"]);
+            result.KalanAnaparaTL = table.Rows[0]["KALANANAPARATL"] == DBNull.Value ? 0 : Convert.ToDecimal(table.Rows[0]["KALANANAPARATL"]);
+            result.KullandirimKuru = table.Rows[0]["KULLANDIRIMKURU"] == DBNull.Value ? 0 : Convert.ToDecimal(table.Rows[0]["KULLANDIRIMKURU"]);
+            result.KalanFaiz = table.Rows[0]["KALANFAIZ"] == DBNull.Value ? 0 : Convert.ToDecimal(table.Rows[0]["KALANFAIZ"]);
+            result.KalanKomisyon = table.Rows[0]["KALANKOMISYON"] == DBNull.Value ? 0 : Convert.ToDecimal(table.Rows[0]["KALANKOMISYON"]);
+            result.KalanBsmv = table.Rows[0]["KALANBSMV"] == DBNull.Value ? 0 : Convert.ToDecimal(table.Rows[0]["KALANBSMV"]);
+            result.KalanKkdf = table.Rows[0]["KALANKKDF"] == DBNull.Value ? 0 : Convert.ToDecimal(table.Rows[0]["KALANKKDF"]);
+            result.NaceSektorKodu = table.Rows[0]["NACESEKTORKODU"].ToString();
+            result.TcmbMusteriAltSektorKodu = table.Rows[0]["TCMBMUSTERIALTSEKTORKODU"].ToString();
+            result.Konsolide = table.Rows[0]["KONSOLIDE"] == DBNull.Value ? Byte.MinValue : Convert.ToByte(table.Rows[0]["KONSOLIDE"]);
+            result.EndeksOncekiGunSayisi = table.Rows[0]["ENDEKSONCEKIGUNSAYISI"] == DBNull.Value ? Byte.MinValue : Convert.ToByte(table.Rows[0]["ENDEKSONCEKIGUNSAYISI"]);
+            result.EndeksKaynagi = table.Rows[0]["ENDEKSKAYNAGI"] == DBNull.Value ? Byte.MinValue : Convert.ToByte(table.Rows[0]["ENDEKSKAYNAGI"]);
+            result.EndeksDovizCinsi = table.Rows[0]["ENDEKSDOVIZCINSI"] == DBNull.Value ? Byte.MinValue : Convert.ToByte(table.Rows[0]["ENDEKSDOVIZCINSI"]);
+            result.EndeksPeriyodu = table.Rows[0]["ENDEKSPERIYODU"] == DBNull.Value ? Byte.MinValue : Convert.ToByte(table.Rows[0]["ENDEKSPERIYODU"]);
+            result.TicariIstihbaratReferansi = table.Rows[0]["TICARIISTIHBARATREFERANSI"].ToString();
+            result.SozlesmeNo = table.Rows[0]["SOZLESMENO"].ToString();
+            result.RecordDate = table.Rows[0]["RECORDDATE"] == DBNull.Value ? DateTime.MinValue : Convert.ToDateTime(table.Rows[0]["RECORDDATE"]);
+            result.RecordUserCode = table.Rows[0]["RECORDUSERCODE"].ToString();
+            result.RecordBranchCode = table.Rows[0]["RECORDBRANCHCODE"].ToString();
+            result.RecordScreenCode = table.Rows[0]["RECORDSCREENCODE"].ToString();
+            result.RecordRequestObjectId = table.Rows[0]["RECORDREQUESTOBJECTID"] == DBNull.Value ? Guid.Empty : new Guid(table.Rows[0]["RECORDREQUESTOBJECTID"].ToString());
+            result.RecordChannelCode = table.Rows[0]["RECORDCHANNELCODE"] == DBNull.Value ? Channels.None : (Channels)Convert.ToByte(table.Rows[0]["RECORDCHANNELCODE"]);
+
+            return result;
+        }
+
+        /// <summary> 
+        ///  
+        /// </summary> 
+        /// <param name="dto"></param> 
+        /// <returns></returns> 
+        public virtual DTOEximBankKredi Ekle(DTOEximBankKredi dto)
+        {
+            DatabaseParameters parameters = new DatabaseParameters();
+            parameters.AddOutParameter("Id", dto.Id, DatabaseTypes.Int64, 19);
+            parameters.AddInParameter("SubeKodu", dto.SubeKodu, DatabaseTypes.String);
+            parameters.AddInParameter("MusteriNo", dto.MusteriNo, DatabaseTypes.String);
+            parameters.AddInParameter("EximFirmaKodu", dto.EximFirmaKodu, DatabaseTypes.Int64);
+            parameters.AddInParameter("EximReferansKodu", dto.EximReferansKodu, DatabaseTypes.Int64);
+            parameters.AddInParameter("BasvuruTarihi", dto.BasvuruTarihi, DatabaseTypes.Date);
+            parameters.AddInParameter("KrediTutari", dto.KrediTutari, DatabaseTypes.Decimal);
+            parameters.AddInParameter("DovizCinsi", dto.DovizCinsi, DatabaseTypes.String);
+            parameters.AddInParameter("VadeSuresi", dto.VadeSuresi, DatabaseTypes.Int32);
+            parameters.AddInParameter("VadeTuru", Convert.ToByte(dto.VadeTuru), DatabaseTypes.Byte);
+            parameters.AddInParameter("FaizOrani", dto.FaizOrani, DatabaseTypes.Decimal);
+            parameters.AddInParameter("EximMevduatHesapNo", dto.EximMevduatHesapNo, DatabaseTypes.String);
+            parameters.AddInParameter("EftMasrafTutari", dto.EftMasrafTutari, DatabaseTypes.Decimal);
+            parameters.AddInParameter("IslemKuru", dto.IslemKuru, DatabaseTypes.Decimal);
+            parameters.AddInParameter("DurumKodu", Convert.ToByte(dto.DurumKodu), DatabaseTypes.Byte);
+            parameters.AddOutParameter("RecordDate", dto.RecordDate, DatabaseTypes.Date, 7);
+            parameters.AddOutParameter("RecordUserCode", dto.RecordUserCode, DatabaseTypes.String, 10);
+            parameters.AddOutParameter("RecordBranchCode", dto.RecordBranchCode, DatabaseTypes.String, 6);
+            parameters.AddOutParameter("RecordScreenCode", dto.RecordScreenCode, DatabaseTypes.String, 10);
+            parameters.AddOutParameter("RecordRequestObjectId", dto.RecordRequestObjectId.ToString(), DatabaseTypes.Char, 36);
+            parameters.AddOutParameter("RecordChannelCode", Convert.ToByte(dto.RecordChannelCode), DatabaseTypes.Byte, 2);
+            parameters.AddInParameter("KullandirimTarihi", dto.KullandirimTarihi, DatabaseTypes.Date);
+            parameters.AddInParameter("TalepBasvuruTarihi", dto.TalepBasvuruTarihi, DatabaseTypes.Date);
+
+            this.Database.ExecuteNonQuery("TKR_I_EXIMBANKKREDI", parameters);
+
+            dto.Id = Convert.ToInt64(parameters["Id"].Value.ToString());
+            dto.RecordDate = Convert.ToDateTime(parameters["RecordDate"].Value.ToString());
+            dto.RecordUserCode = parameters["RecordUserCode"].Value.ToString();
+            dto.RecordBranchCode = parameters["RecordBranchCode"].Value.ToString();
+            dto.RecordScreenCode = parameters["RecordScreenCode"].Value.ToString();
+            dto.RecordRequestObjectId = new Guid(parameters["RecordRequestObjectId"].Value.ToString());
+            dto.RecordChannelCode = (Channels)Convert.ToByte(parameters["RecordChannelCode"].Value.ToString());
+            return dto;
+        }
+
+        /// <summary> 
+        ///  
+        /// </summary> 
+        /// <param name="dto"></param> 
+        /// <returns></returns> 
+        public virtual DTOEximBankKredi Oku(DTOEximBankKredi dto)
+        {
+            DatabaseParameters parameters = new DatabaseParameters();
+            parameters.AddInParameter("Id", dto.Id, DatabaseTypes.Int64);
+            parameters.AddOutParameter("RC", null, DatabaseTypes.RefCursor);
+
+            DataTable table = this.Database.ExecuteDataSet("TKR_S_EXIMBANKKREDI", parameters).Tables[0];
+
+            if (table.Rows.Count == 0)
+                throw new RecordNotFoundException("Eximbankkredi", "Id", dto.Id.ToString());
+
+            DTOEximBankKredi result = new DTOEximBankKredi();
+            result.Id = table.Rows[0]["ID"] == DBNull.Value ? 0 : Convert.ToInt64(table.Rows[0]["ID"]);
+            result.SubeKodu = table.Rows[0]["SUBEKODU"].ToString();
+            result.MusteriNo = table.Rows[0]["MUSTERINO"].ToString();
+            result.EximFirmaKodu = table.Rows[0]["EXIMFIRMAKODU"] == DBNull.Value ? 0 : Convert.ToInt64(table.Rows[0]["EXIMFIRMAKODU"]);
+            result.EximReferansKodu = table.Rows[0]["EXIMREFERANSKODU"] == DBNull.Value ? 0 : Convert.ToInt64(table.Rows[0]["EXIMREFERANSKODU"]);
+            result.BasvuruTarihi = table.Rows[0]["BASVURUTARIHI"] == DBNull.Value ? DateTime.MinValue : Convert.ToDateTime(table.Rows[0]["BASVURUTARIHI"]);
+            result.KrediTutari = table.Rows[0]["KREDITUTARI"] == DBNull.Value ? 0 : Convert.ToDecimal(table.Rows[0]["KREDITUTARI"]);
+            result.DovizCinsi = table.Rows[0]["DOVIZCINSI"].ToString();
+            result.VadeSuresi = table.Rows[0]["VADESURESI"] == DBNull.Value ? 0 : Convert.ToInt32(table.Rows[0]["VADESURESI"]);
+            result.VadeTuru = table.Rows[0]["VADETURU"] == DBNull.Value ? KrediZamanOlculeri.None : (KrediZamanOlculeri)Convert.ToByte(table.Rows[0]["VADETURU"]);
+            result.FaizOrani = table.Rows[0]["FAIZORANI"] == DBNull.Value ? 0 : Convert.ToDecimal(table.Rows[0]["FAIZORANI"]);
+            result.EximMevduatHesapNo = table.Rows[0]["EXIMMEVDUATHESAPNO"].ToString();
+            result.EftMasrafTutari = table.Rows[0]["EFTMASRAFTUTARI"] == DBNull.Value ? 0 : Convert.ToDecimal(table.Rows[0]["EFTMASRAFTUTARI"]);
+            result.IslemKuru = table.Rows[0]["ISLEMKURU"] == DBNull.Value ? 0 : Convert.ToDecimal(table.Rows[0]["ISLEMKURU"]);
+            result.DurumKodu = table.Rows[0]["DURUMKODU"] == DBNull.Value ? States.None : (States)Convert.ToByte(table.Rows[0]["DURUMKODU"]);
+            result.RecordDate = table.Rows[0]["RECORDDATE"] == DBNull.Value ? DateTime.MinValue : Convert.ToDateTime(table.Rows[0]["RECORDDATE"]);
+            result.RecordUserCode = table.Rows[0]["RECORDUSERCODE"].ToString();
+            result.RecordBranchCode = table.Rows[0]["RECORDBRANCHCODE"].ToString();
+            result.RecordScreenCode = table.Rows[0]["RECORDSCREENCODE"].ToString();
+            result.RecordRequestObjectId = table.Rows[0]["RECORDREQUESTOBJECTID"] == DBNull.Value ? Guid.Empty : new Guid(table.Rows[0]["RECORDREQUESTOBJECTID"].ToString());
+            result.RecordChannelCode = table.Rows[0]["RECORDCHANNELCODE"] == DBNull.Value ? Channels.None : (Channels)Convert.ToByte(table.Rows[0]["RECORDCHANNELCODE"]);
+            result.KullandirimTarihi = table.Rows[0]["KULLANDIRIMTARIHI"] == DBNull.Value ? DateTime.MinValue : Convert.ToDateTime(table.Rows[0]["KULLANDIRIMTARIHI"]);
+            result.TalepBasvuruTarihi = table.Rows[0]["TALEPBASVURUTARIHI"] == DBNull.Value ? DateTime.MinValue : Convert.ToDateTime(table.Rows[0]["TALEPBASVURUTARIHI"]);
+
+            return result;
+        }
+        /*
+        /// <summary> 
+        ///  
+        /// </summary> 
+        /// <param name="dto"></param> 
+        /// <returns></returns> 
+        public virtual List<DTOEximBankKredi> Getir(DTOEximBankKredi dto)
+        {
+            DatabaseParameters parameters = new DatabaseParameters();
+            parameters.AddInParameter("SubeKodu", dto.SubeKodu, DatabaseTypes.String);
+            parameters.AddInParameter("MusteriNo", dto.MusteriNo, DatabaseTypes.String);
+            parameters.AddInParameter("EximFirmaKodu", dto.EximFirmaKodu, DatabaseTypes.Int64);
+            parameters.AddInParameter("EximReferansKodu", dto.EximReferansKodu, DatabaseTypes.Int64);
+            parameters.AddOutParameter("RC", null, DatabaseTypes.RefCursor);
+
+            DataTable table = this.Database.ExecuteDataSet("TKR_L_EXIMBANKKREDI", parameters).Tables[0];
+
+            
+            List<DTOEximBankKredi> result = new List<DTOEximBankKredi>();
+            foreach (DataRow row in table.Rows)
+            {
+                result.Add(new DTOEximBankKredi()
+                {
+                    Id = row["ID"] == DBNull.Value ? 0 : Convert.ToInt64(row["ID"]),
+                    SubeKodu = row["SUBEKODU"].ToString(),
+                    MusteriNo = row["MUSTERINO"].ToString(),
+                    EximFirmaKodu = row["EXIMFIRMAKODU"] == DBNull.Value ? 0 : Convert.ToInt64(row["EXIMFIRMAKODU"]),
+                    EximReferansKodu = row["EXIMREFERANSKODU"] == DBNull.Value ? 0 : Convert.ToInt64(row["EXIMREFERANSKODU"]),
+                    BasvuruTarihi = row["BASVURUTARIHI"] == DBNull.Value ? DateTime.MinValue : Convert.ToDateTime(row["BASVURUTARIHI"]),
+                    KrediTutari = row["KREDITUTARI"] == DBNull.Value ? 0 : Convert.ToDecimal(row["KREDITUTARI"]),
+                    DovizCinsi = row["DOVIZCINSI"].ToString(),
+                    VadeSuresi = row["VADESURESI"] == DBNull.Value ? 0 : Convert.ToInt32(row["VADESURESI"]),
+                    VadeTuru = row["VADETURU"] == DBNull.Value ? KrediZamanOlculeri.None : (KrediZamanOlculeri)Convert.ToByte(row["VADETURU"]),
+                    FaizOrani = row["FAIZORANI"] == DBNull.Value ? 0 : Convert.ToDecimal(row["FAIZORANI"]),
+                    EximMevduatHesapNo = row["EXIMMEVDUATHESAPNO"].ToString(),
+                    EftMasrafTutari = row["EFTMASRAFTUTARI"] == DBNull.Value ? 0 : Convert.ToDecimal(row["EFTMASRAFTUTARI"]),
+                    IslemKuru = row["ISLEMKURU"] == DBNull.Value ? 0 : Convert.ToDecimal(row["ISLEMKURU"]),
+                    DurumKodu = row["DURUMKODU"] == DBNull.Value ? States.None : (States)Convert.ToByte(row["DURUMKODU"]),
+                    RecordDate = row["RECORDDATE"] == DBNull.Value ? DateTime.MinValue : Convert.ToDateTime(row["RECORDDATE"]),
+                    RecordUserCode = row["RECORDUSERCODE"].ToString(),
+                    RecordBranchCode = row["RECORDBRANCHCODE"].ToString(),
+                    RecordScreenCode = row["RECORDSCREENCODE"].ToString(),
+                    RecordRequestObjectId = row["RECORDREQUESTOBJECTID"] == DBNull.Value ? Guid.Empty : new Guid(row["RECORDREQUESTOBJECTID"].ToString()),
+                    RecordChannelCode = row["RECORDCHANNELCODE"] == DBNull.Value ? Channels.None : (Channels)Convert.ToByte(row["RECORDCHANNELCODE"]),
+                    KullandirimTarihi = row["KULLANDIRIMTARIHI"] == DBNull.Value ? DateTime.MinValue : Convert.ToDateTime(row["KULLANDIRIMTARIHI"]),
+                });
+            }
+            return result;
+        }
+        */
+
+        /// <summary> 
+        ///  
+        /// </summary> 
+        /// <param name="dto"></param> 
+        /// <returns></returns> 
+        public virtual List<DTOEximBankKredi> GetirById(DTOEximBankKredi dto)
+        {
+            DatabaseParameters parameters = new DatabaseParameters();
+            parameters.AddInParameter("SubeKodu", dto.SubeKodu, DatabaseTypes.String);
+            parameters.AddInParameter("MusteriNo", dto.MusteriNo, DatabaseTypes.String);
+            parameters.AddInParameter("EximFirmaKodu", dto.EximFirmaKodu, DatabaseTypes.String);
+            parameters.AddInParameter("EximReferansKodu", dto.EximReferansKodu, DatabaseTypes.Int64);
+            parameters.AddInParameter("DurumKodu", dto.DurumKodu, DatabaseTypes.Int16);
+            parameters.AddOutParameter("RC", null, DatabaseTypes.RefCursor);
+
+            DataTable table = this.Database.ExecuteDataSet("TKR_L_EXIMBANKKREDIBYID", parameters).Tables[0];
+
+            List<DTOEximBankKredi> result = new List<DTOEximBankKredi>();
+            foreach (DataRow row in table.Rows)
+            {
+                result.Add(new DTOEximBankKredi()
+                {
+                    Id = row["ID"] == DBNull.Value ? 0 : Convert.ToInt64(row["ID"]),
+                    SubeKodu = row["SUBEKODU"].ToString(),
+                    MusteriNo = row["MUSTERINO"].ToString(),
+                    EximFirmaKodu = row["EXIMFIRMAKODU"] == DBNull.Value ? 0 : Convert.ToInt64(row["EXIMFIRMAKODU"]),
+                    EximReferansKodu = row["EXIMREFERANSKODU"] == DBNull.Value ? 0 : Convert.ToInt64(row["EXIMREFERANSKODU"]),
+                    BasvuruTarihi = row["BASVURUTARIHI"] == DBNull.Value ? DateTime.MinValue : Convert.ToDateTime(row["BASVURUTARIHI"]),
+                    KrediTutari = row["KREDITUTARI"] == DBNull.Value ? 0 : Convert.ToDecimal(row["KREDITUTARI"]),
+                    DovizCinsi = row["DOVIZCINSI"].ToString(),
+                    VadeSuresi = row["VADESURESI"] == DBNull.Value ? 0 : Convert.ToInt32(row["VADESURESI"]),
+                    VadeTuru = row["VADETURU"] == DBNull.Value ? KrediZamanOlculeri.None : (KrediZamanOlculeri)Convert.ToByte(row["VADETURU"]),
+                    FaizOrani = row["FAIZORANI"] == DBNull.Value ? 0 : Convert.ToDecimal(row["FAIZORANI"]),
+                    EximMevduatHesapNo = row["EXIMMEVDUATHESAPNO"].ToString(),
+                    EftMasrafTutari = row["EFTMASRAFTUTARI"] == DBNull.Value ? 0 : Convert.ToDecimal(row["EFTMASRAFTUTARI"]),
+                    IslemKuru = row["ISLEMKURU"] == DBNull.Value ? 0 : Convert.ToDecimal(row["ISLEMKURU"]),
+                    DurumKodu = row["DURUMKODU"] == DBNull.Value ? States.None : (States)Convert.ToByte(row["DURUMKODU"]),
+                    KullandirimTarihi = row["KULLANDIRIMTARIHI"] == DBNull.Value ? DateTime.MinValue : Convert.ToDateTime(row["KULLANDIRIMTARIHI"]),
+                    TalepBasvuruTarihi = row["TALEPBASVURUTARIHI"] == DBNull.Value ? DateTime.MinValue : Convert.ToDateTime(row["TALEPBASVURUTARIHI"]),
+                    RecordDate = row["RECORDDATE"] == DBNull.Value ? DateTime.MinValue : Convert.ToDateTime(row["RECORDDATE"]),
+                    RecordUserCode = row["RECORDUSERCODE"].ToString(),
+                    RecordBranchCode = row["RECORDBRANCHCODE"].ToString(),
+                    RecordScreenCode = row["RECORDSCREENCODE"].ToString(),
+                    RecordRequestObjectId = row["RECORDREQUESTOBJECTID"] == DBNull.Value ? Guid.Empty : new Guid(row["RECORDREQUESTOBJECTID"].ToString()),
+                    RecordChannelCode = row["RECORDCHANNELCODE"] == DBNull.Value ? Channels.None : (Channels)Convert.ToByte(row["RECORDCHANNELCODE"])
+                });
+            }
+            return result;
+        }
+
+        /// <summary> 
+        ///  
+        /// </summary> 
+        /// <param name="dto"></param> 
+        /// <returns></returns> 
+        public virtual List<DTOEximBankKredi> GetirEximReferansKoduIle(DTOEximBankKredi dto)
+        {
+            DatabaseParameters parameters = new DatabaseParameters();
+            parameters.AddInParameter("SubeKodu", dto.SubeKodu, DatabaseTypes.String);
+            parameters.AddInParameter("MusteriNo", dto.MusteriNo, DatabaseTypes.String);
+            parameters.AddInParameter("EximFirmaKodu", dto.EximFirmaKodu, DatabaseTypes.String);
+            parameters.AddInParameter("EximReferansKodu", dto.EximReferansKodu, DatabaseTypes.Int64);
+            parameters.AddInParameter("DurumKodu", 2, DatabaseTypes.Int16);
+            parameters.AddOutParameter("RC", null, DatabaseTypes.RefCursor);
+
+            DataTable table = this.Database.ExecuteDataSet("TKR_L_EXIMBANKKREDIBYHESAP", parameters).Tables[0];
+
+            List<DTOEximBankKredi> result = new List<DTOEximBankKredi>();
+            foreach (DataRow row in table.Rows)
+            {
+                result.Add(new DTOEximBankKredi()
+                {
+                    Id = row["ID"] == DBNull.Value ? 0 : Convert.ToInt64(row["ID"]),
+                    SubeKodu = row["SUBEKODU"].ToString(),
+                    MusteriNo = row["MUSTERINO"].ToString(),
+                    EximFirmaKodu = row["EXIMFIRMAKODU"] == DBNull.Value ? 0 : Convert.ToInt64(row["EXIMFIRMAKODU"]),
+                    EximReferansKodu = row["EXIMREFERANSKODU"] == DBNull.Value ? 0 : Convert.ToInt64(row["EXIMREFERANSKODU"]),
+                    BasvuruTarihi = row["BASVURUTARIHI"] == DBNull.Value ? DateTime.MinValue : Convert.ToDateTime(row["BASVURUTARIHI"]),
+                    KrediTutari = row["KREDITUTARI"] == DBNull.Value ? 0 : Convert.ToDecimal(row["KREDITUTARI"]),
+                    DovizCinsi = row["DOVIZCINSI"].ToString(),
+                    VadeSuresi = row["VADESURESI"] == DBNull.Value ? 0 : Convert.ToInt32(row["VADESURESI"]),
+                    VadeTuru = row["VADETURU"] == DBNull.Value ? KrediZamanOlculeri.None : (KrediZamanOlculeri)Convert.ToByte(row["VADETURU"]),
+                    FaizOrani = row["FAIZORANI"] == DBNull.Value ? 0 : Convert.ToDecimal(row["FAIZORANI"]),
+                    EximMevduatHesapNo = row["EXIMMEVDUATHESAPNO"].ToString(),
+                    EftMasrafTutari = row["EFTMASRAFTUTARI"] == DBNull.Value ? 0 : Convert.ToDecimal(row["EFTMASRAFTUTARI"]),
+                    IslemKuru = row["ISLEMKURU"] == DBNull.Value ? 0 : Convert.ToDecimal(row["ISLEMKURU"]),
+                    DurumKodu = row["DURUMKODU"] == DBNull.Value ? States.None : (States)Convert.ToByte(row["DURUMKODU"]),
+                    KullandirimTarihi = row["KULLANDIRIMTARIHI"] == DBNull.Value ? DateTime.MinValue : Convert.ToDateTime(row["KULLANDIRIMTARIHI"]),
+                    TalepBasvuruTarihi = row["TALEPBASVURUTARIHI"] == DBNull.Value ? DateTime.MinValue : Convert.ToDateTime(row["TALEPBASVURUTARIHI"]),
+                });
+            }
+            return result;
+        }
+
+        /// <summary> 
+        ///  
+        /// </summary> 
+        /// <param name="dto"></param> 
+        /// <returns></returns> 
+        public virtual List<DTOEximBankKredi> GetirEximBankKrediSorguIcin(DTOEximBankKredi dto)
+        {
+            DatabaseParameters parameters = new DatabaseParameters();
+            parameters.AddInParameter("SubeKodu", dto.SubeKodu, DatabaseTypes.String);
+            parameters.AddInParameter("MusteriNo", dto.MusteriNo, DatabaseTypes.String);
+            parameters.AddInParameter("EximFirmaKodu", dto.EximFirmaKodu, DatabaseTypes.String);
+            parameters.AddInParameter("EximReferansKodu", dto.EximReferansKodu, DatabaseTypes.Int64);
+            parameters.AddInParameter("DurumKodu", dto.DurumKodu, DatabaseTypes.Int16);
+            parameters.AddInParameter("KrediHesapNo", dto.KrediHesapNo, DatabaseTypes.Int64);
+            parameters.AddOutParameter("RC", null, DatabaseTypes.RefCursor);
+
+            DataTable table = this.Database.ExecuteDataSet("TKR_L_EXIMBANKKREDISORGU", parameters).Tables[0];
+
+            List<DTOEximBankKredi> result = new List<DTOEximBankKredi>();
+            foreach (DataRow row in table.Rows)
+            {
+                result.Add(new DTOEximBankKredi()
+                {
+                    Id = row["ID"] == DBNull.Value ? 0 : Convert.ToInt64(row["ID"]),
+                    SubeKodu = row["SUBEKODU"].ToString(),
+                    MusteriNo = row["MUSTERINO"].ToString(),
+                    EximFirmaKodu = row["EXIMFIRMAKODU"] == DBNull.Value ? 0 : Convert.ToInt64(row["EXIMFIRMAKODU"]),
+                    EximReferansKodu = row["EXIMREFERANSKODU"] == DBNull.Value ? 0 : Convert.ToInt64(row["EXIMREFERANSKODU"]),
+                    BasvuruTarihi = row["BASVURUTARIHI"] == DBNull.Value ? DateTime.MinValue : Convert.ToDateTime(row["BASVURUTARIHI"]),
+                    KrediTutari = row["KREDITUTARI"] == DBNull.Value ? 0 : Convert.ToDecimal(row["KREDITUTARI"]),
+                    DovizCinsi = row["DOVIZCINSI"].ToString(),
+                    VadeSuresi = row["VADESURESI"] == DBNull.Value ? 0 : Convert.ToInt32(row["VADESURESI"]),
+                    VadeTuru = row["VADETURU"] == DBNull.Value ? KrediZamanOlculeri.None : (KrediZamanOlculeri)Convert.ToByte(row["VADETURU"]),
+                    FaizOrani = row["FAIZORANI"] == DBNull.Value ? 0 : Convert.ToDecimal(row["FAIZORANI"]),
+                    EximMevduatHesapNo = row["EXIMMEVDUATHESAPNO"].ToString(),
+                    EftMasrafTutari = row["EFTMASRAFTUTARI"] == DBNull.Value ? 0 : Convert.ToDecimal(row["EFTMASRAFTUTARI"]),
+                    IslemKuru = row["ISLEMKURU"] == DBNull.Value ? 0 : Convert.ToDecimal(row["ISLEMKURU"]),
+                    DurumKodu = row["KREDIDURUMKODU"] == DBNull.Value ? States.None : (States)Convert.ToByte(row["KREDIDURUMKODU"]),
+                    KullandirimTarihi = row["KULLANDIRIMTARIHI"] == DBNull.Value ? DateTime.MinValue : Convert.ToDateTime(row["KULLANDIRIMTARIHI"]),
+                    TalepBasvuruTarihi = row["TALEPBASVURUTARIHI"] == DBNull.Value ? DateTime.MinValue : Convert.ToDateTime(row["TALEPBASVURUTARIHI"]),
+                    KrediHesapNo = row["KREDIHESAPNO"] == DBNull.Value ? 0 : Convert.ToInt64(row["KREDIHESAPNO"]),
+                    KalanAnapara = row["KALANANAPARA"] == DBNull.Value ? 0 : Convert.ToDecimal(row["KALANANAPARA"]),
+                });
+            }
+            return result;
+        }
+
+
+        /// <summary> 
+        ///  
+        /// </summary> 
+        /// <param name="dto"></param> 
+        /// <returns></returns> 
+        public virtual DTOEximBankKredi Guncelle(DTOEximBankKredi dto)
+        {
+            DatabaseParameters parameters = new DatabaseParameters();
+            parameters.AddInParameter("Id", dto.Id, DatabaseTypes.Int64);
+            parameters.AddInParameter("SubeKodu", dto.SubeKodu, DatabaseTypes.String);
+            parameters.AddInParameter("MusteriNo", dto.MusteriNo, DatabaseTypes.String);
+            parameters.AddInParameter("EximFirmaKodu", dto.EximFirmaKodu, DatabaseTypes.Int64);
+            parameters.AddInParameter("EximReferansKodu", dto.EximReferansKodu, DatabaseTypes.Int64);
+            parameters.AddInParameter("BasvuruTarihi", dto.BasvuruTarihi, DatabaseTypes.Date);
+            parameters.AddInParameter("KrediTutari", dto.KrediTutari, DatabaseTypes.Decimal);
+            parameters.AddInParameter("DovizCinsi", dto.DovizCinsi, DatabaseTypes.String);
+            parameters.AddInParameter("VadeSuresi", dto.VadeSuresi, DatabaseTypes.Int32);
+            parameters.AddInParameter("VadeTuru", Convert.ToByte(dto.VadeTuru), DatabaseTypes.Byte);
+            parameters.AddInParameter("FaizOrani", dto.FaizOrani, DatabaseTypes.Decimal);
+            parameters.AddInParameter("EximMevduatHesapNo", dto.EximMevduatHesapNo, DatabaseTypes.String);
+            parameters.AddInParameter("EftMasrafTutari", dto.EftMasrafTutari, DatabaseTypes.Decimal);
+            parameters.AddInParameter("IslemKuru", dto.IslemKuru, DatabaseTypes.Decimal);
+            parameters.AddInParameter("DurumKodu", Convert.ToByte(dto.DurumKodu), DatabaseTypes.Byte);
+            parameters.AddInOutParameter("RecordDate", dto.RecordDate, DatabaseTypes.Date, 7);
+            parameters.AddOutParameter("RecordUserCode", dto.RecordUserCode, DatabaseTypes.String, 10);
+            parameters.AddOutParameter("RecordBranchCode", dto.RecordBranchCode, DatabaseTypes.String, 6);
+            parameters.AddOutParameter("RecordScreenCode", dto.RecordScreenCode, DatabaseTypes.String, 10);
+            parameters.AddOutParameter("RecordRequestObjectId", dto.RecordRequestObjectId.ToString(), DatabaseTypes.Char, 36);
+            parameters.AddOutParameter("RecordChannelCode", Convert.ToByte(dto.RecordChannelCode), DatabaseTypes.Byte, 2);
+            parameters.AddInParameter("KullandirimTarihi", dto.KullandirimTarihi, DatabaseTypes.Date);
+            parameters.AddInParameter("TalepBasvuruTarihi", dto.TalepBasvuruTarihi, DatabaseTypes.Date);
+            parameters.AddOutParameter("RecordCount", 0, DatabaseTypes.Int64, 19);
+
+            this.Database.ExecuteNonQuery("TKR_U_EXIMBANKKREDI", parameters);
+
+            long efectedRowCount = Convert.ToInt64(parameters["RecordCount"].Value.ToString());
+            if (efectedRowCount == 0)
+                throw new RecordChangedException("Id", dto.Id.ToString());
+
+            dto.RecordDate = Convert.ToDateTime(parameters["RecordDate"].Value.ToString());
+            dto.RecordUserCode = parameters["RecordUserCode"].Value.ToString();
+            dto.RecordBranchCode = parameters["RecordBranchCode"].Value.ToString();
+            dto.RecordScreenCode = parameters["RecordScreenCode"].Value.ToString();
+            dto.RecordRequestObjectId = new Guid(parameters["RecordRequestObjectId"].Value.ToString());
+            dto.RecordChannelCode = (Channels)Convert.ToByte(parameters["RecordChannelCode"].Value.ToString());
+
+            return dto;
+        }
+
+
+        #endregion Public Methods
+    }
+}
+
+
